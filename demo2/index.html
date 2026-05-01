@@ -135,20 +135,13 @@
       height: 50%;
       max-height: 56%;
       max-width: 420px;
+      background-image: var(--ad-image);
       background-position: center;
       background-repeat: no-repeat;
       background-size: contain;
       border-radius: 14px;
       box-shadow: 0 18px 38px rgba(0, 0, 0, 0.52);
       z-index: 2;
-    }
-
-    .ad-overlay.after {
-      background-image: url("/demo2/after.png"), url("after.png");
-    }
-
-    .ad-overlay.before {
-      background-image: url("/demo2/before.png"), url("before.png");
     }
 
     .meta {
@@ -275,7 +268,7 @@
           <div class="frame-bg" aria-hidden="true"></div>
           <div class="frame-dim" aria-hidden="true"></div>
           <div class="badge">静态画面</div>
-          <div class="ad-overlay after" aria-label="居中广告"></div>
+          <div class="ad-overlay" style='--ad-image: url("/demo2/after.png"), url("after.png");' aria-label="居中广告"></div>
         </div>
         <div class="meta">
           <h1 class="title">《飞驰人生》</h1>
@@ -305,7 +298,7 @@
           <div class="frame-bg" aria-hidden="true"></div>
           <div class="frame-dim" aria-hidden="true"></div>
           <div class="badge">静态画面</div>
-          <div class="ad-overlay before" aria-label="居中广告"></div>
+          <div class="ad-overlay" style='--ad-image: url("/demo2/before.png"), url("before.png");' aria-label="居中广告"></div>
         </div>
         <div class="meta">
           <h1 class="title">《飞驰人生》</h1>
