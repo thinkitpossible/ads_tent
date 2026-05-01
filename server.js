@@ -519,9 +519,25 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  const cleanUrl = req.url === "/" ? "/index.html" : req.url;
-  const filePath = path.join(ROOT, decodeURIComponent(cleanUrl));
-  if (!filePath.startsWith(ROOT)) {
+  let pathname = req.url;
+  try {
+    pathname = new URL(req.url, "http://local").pathname;
+  } catch {
+    pathname = req.url;
+  }
+
+  const cleanUrl = pathname === "/" ? "/index.html" : pathname;
+  let decodedPath = cleanUrl;
+  try {
+    decodedPath = decodeURIComponent(cleanUrl);
+  } catch {
+    return sendText(res, 400, "Bad Request");
+  }
+
+  const rootPath = path.resolve(ROOT);
+  const filePath = path.resolve(ROOT, "." + decodedPath);
+
+  if (filePath !== rootPath && !filePath.startsWith(rootPath + path.sep)) {
     return sendText(res, 403, "Forbidden");
   }
 
