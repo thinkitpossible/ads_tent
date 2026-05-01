@@ -1200,8 +1200,8 @@
 
     <aside class="right">
       <div class="right-header">
-        <h2 class="right-title">正在热播（共 3 个广告）</h2>
-        <span class="state" id="playState">共 3 个广告</span>
+        <h2 class="right-title">正在热播</h2>
+        <span class="state" id="playState">热播中</span>
       </div>
       <ul class="playlist" id="playlist"></ul>
       <div class="tips" id="tipsBox">
@@ -1503,19 +1503,20 @@
       return adCatalog[adNo] || { name: `广告${adNo}`, product: "商品", tone: "待补充", baseStyle: "默认风格", preferredStyle: "偏好风格" };
     }
 
-    function getPrimaryAdNo(index) {
-      return [5, 2, 3][index] || index + 1;
-    }
+    const hotPlaylist = [
+      { name: "《剑来》第一集", desc: "少年陈平安初入江湖，命运长卷正式展开" },
+      { name: "《剑来》第二集", desc: "小镇风云渐起，旧事与新局交错浮现" },
+      { name: "《剑来》第三集", desc: "热血国漫 · 高燃剧情 · 会员抢先看" },
+      { name: "《凡人修仙传》", desc: "高口碑国漫，凡人踏上修仙长路" },
+      { name: "《斗破苍穹 年番》", desc: "异火重燃，萧炎再启强者之路" }
+    ];
 
     function renderPlaylist() {
-      playlist.innerHTML = adSources.map((src, index) => {
-        const adNo = getPrimaryAdNo(index);
-        const meta = safeAdMeta(adNo);
-        const fileName = src.split("/").pop();
+      playlist.innerHTML = hotPlaylist.map((item, index) => {
         return `
-          <li class="item ${index === currentIndex ? "active" : ""}">
-            <p class="item-name">广告 ${index + 1}/${adSources.length} · ${meta.name}</p>
-            <p class="item-desc">${fileName} · ${meta.product} · ${meta.baseStyle} · ${meta.tone}</p>
+          <li class="item ${index === 0 ? "active" : ""}">
+            <p class="item-name">${item.name}</p>
+            <p class="item-desc">${item.desc}</p>
           </li>
         `;
       }).join("");
@@ -1596,7 +1597,7 @@
       player.muted = true;
       player.defaultMuted = true;
       player.setAttribute("muted", "");
-      playState.textContent = `广告 ${currentIndex + 1}/${adSources.length}`;
+      playState.textContent = "播放中";
       renderPlaylist();
       if (autoplay) {
         const playPromise = player.play();
