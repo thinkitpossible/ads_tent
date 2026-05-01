@@ -548,10 +548,9 @@ const server = http.createServer(async (req, res) => {
 
     const ext = path.extname(filePath).toLowerCase();
     const type = MIME[ext] || "application/octet-stream";
-    const cacheControl = ext === ".html" ? "no-store" : "public, max-age=31536000, immutable";
     res.writeHead(200, {
       "Content-Type": type,
-      "Cache-Control": cacheControl
+      "Cache-Control": "no-store"
     });
     fs.createReadStream(filePath).pipe(res);
   });
