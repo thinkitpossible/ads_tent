@@ -88,9 +88,18 @@
     .player-wrap {
       position: relative;
       width: 100%;
-      aspect-ratio: 16 / 9;
+      height: 0;
+      padding-top: 56.25%;
       background: #000;
       overflow: hidden;
+    }
+
+    @supports (aspect-ratio: 16 / 9) {
+      .player-wrap {
+        height: auto;
+        padding-top: 0;
+        aspect-ratio: 16 / 9;
+      }
     }
 
     .frame-bg-img {
@@ -261,10 +270,10 @@
     <section class="player-layout" aria-label="播放器一">
       <section class="player-card">
         <div class="player-wrap">
-          <img class="frame-bg-img" alt="" aria-hidden="true" data-src-candidates="./bg.png|/demo2/bg.png" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" />
+          <img class="frame-bg-img" alt="" aria-hidden="true" src="./bg.png?v=20260501" />
           <div class="frame-dim" aria-hidden="true"></div>
           <div class="badge">静态画面</div>
-          <img class="ad-overlay" alt="居中广告" data-src-candidates="./after.png|/demo2/after.png" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" />
+          <img class="ad-overlay" src="./after.png?v=20260501" alt="居中广告" />
         </div>
         <div class="meta">
           <h1 class="title">《飞驰人生》</h1>
@@ -291,10 +300,10 @@
     <section class="player-layout" aria-label="播放器二">
       <section class="player-card">
         <div class="player-wrap">
-          <img class="frame-bg-img" alt="" aria-hidden="true" data-src-candidates="./bg.png|/demo2/bg.png" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" />
+          <img class="frame-bg-img" alt="" aria-hidden="true" src="./bg.png?v=20260501" />
           <div class="frame-dim" aria-hidden="true"></div>
           <div class="badge">静态画面</div>
-          <img class="ad-overlay" alt="居中广告" data-src-candidates="./before.png|/demo2/before.png" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" />
+          <img class="ad-overlay" src="./before.png?v=20260501" alt="居中广告" />
         </div>
         <div class="meta">
           <h1 class="title">《飞驰人生》</h1>
@@ -315,50 +324,5 @@
     </section>
   </main>
 
-  <script>
-    (function () {
-      var params = new URLSearchParams(window.location.search || "");
-      if (!params.has("v")) {
-        params.set("v", String(Date.now()));
-        var next = window.location.pathname + "?" + params.toString() + (window.location.hash || "");
-        window.location.replace(next);
-        return;
-      }
-
-      var cacheBust = "v=" + params.get("v");
-
-      function withBust(url) {
-        if (!url) return url;
-        return url + (url.indexOf("?") >= 0 ? "&" : "?") + cacheBust;
-      }
-
-      function setWithFallback(img) {
-        var raw = img.getAttribute("data-src-candidates") || "";
-        var candidates = raw
-          .split("|")
-          .map(function (s) { return s.trim(); })
-          .filter(Boolean);
-
-        var index = 0;
-
-        function tryNext() {
-          if (index >= candidates.length) return;
-          var nextUrl = candidates[index++];
-          img.src = withBust(nextUrl);
-        }
-
-        img.addEventListener("error", function () {
-          tryNext();
-        });
-
-        tryNext();
-      }
-
-      var imgs = document.querySelectorAll("img[data-src-candidates]");
-      for (var i = 0; i < imgs.length; i++) {
-        setWithFallback(imgs[i]);
-      }
-    })();
-  </script>
 </body>
 </html>
