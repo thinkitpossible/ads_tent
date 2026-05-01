@@ -40,6 +40,14 @@ function sendText(res, status, text, contentType = "text/plain; charset=utf-8") 
   res.end(text);
 }
 
+function sendRedirect(res, location) {
+  res.writeHead(302, {
+    Location: location,
+    "Cache-Control": "no-store"
+  });
+  res.end();
+}
+
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     let data = "";
@@ -527,6 +535,15 @@ const server = http.createServer(async (req, res) => {
   }
 
   const cleanUrl = pathname === "/" ? "/index.html" : pathname;
+
+  if (cleanUrl === "/demo1") {
+    return sendRedirect(res, "/demo1/index.html");
+  }
+
+  if (cleanUrl === "/demo2") {
+    return sendRedirect(res, "/demo2/index.html");
+  }
+
   let decodedPath = cleanUrl;
   try {
     decodedPath = decodeURIComponent(cleanUrl);
@@ -543,6 +560,14 @@ const server = http.createServer(async (req, res) => {
 
   fs.stat(filePath, (statErr, stats) => {
     if (statErr || !stats.isFile()) {
+      if (decodedPath.startsWith("/demo2/") && decodedPath.toLowerCase().endsWith(".png")) {
+        console.warn("[static-miss] demo2 png not found", {
+          url: req.url,
+          pathname,
+          decodedPath,
+          filePath
+        });
+      }
       return sendText(res, 404, "Not Found");
     }
 
