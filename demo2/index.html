@@ -56,13 +56,13 @@
     }
 
     .stage {
-      max-width: 1600px;
+      max-width: 1360px;
       margin: 20px auto 40px;
       padding: 0 16px;
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(240px, 0.35fr) minmax(0, 1fr);
+      display: flex;
+      flex-direction: column;
       gap: 16px;
-      align-items: start;
+      align-items: stretch;
     }
 
     .player-card,
@@ -93,7 +93,7 @@
     .frame-bg {
       position: absolute;
       inset: 0;
-      background: url("./bg.png") center / cover no-repeat;
+      background: url("/demo2/bg.png") center / cover no-repeat;
       transform: scale(1.02);
     }
 
@@ -123,8 +123,8 @@
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
-      width: min(62%, 520px);
-      max-height: 74%;
+      width: min(50%, 420px);
+      max-height: 56%;
       object-fit: contain;
       border-radius: 14px;
       box-shadow: 0 18px 38px rgba(0, 0, 0, 0.52);
@@ -225,34 +225,19 @@
       font-weight: 900;
       letter-spacing: 0.02em;
       line-height: 1.2;
-      font-size: clamp(22px, 2.2vw, 34px);
+      font-size: clamp(28px, 2.8vw, 46px);
       color: var(--text);
       text-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+      text-align: center;
     }
 
     .focus-text strong {
       color: var(--brand-2);
     }
 
-    @media (max-width: 1280px) {
-      .stage {
-        grid-template-columns: 1fr;
-      }
-
-      .player-layout {
-        grid-template-columns: minmax(0, 1fr) 320px;
-      }
-
-      .focus-card { order: 2; }
-    }
-
     @media (max-width: 860px) {
       .player-layout {
         grid-template-columns: 1fr;
-      }
-
-      .ad-overlay {
-        width: min(78%, 520px);
       }
     }
   </style>
@@ -270,7 +255,7 @@
           <div class="frame-bg" aria-hidden="true"></div>
           <div class="frame-dim" aria-hidden="true"></div>
           <div class="badge">静态画面</div>
-          <img class="ad-overlay" src="./after.png" alt="居中广告" />
+          <img class="ad-overlay" src="/demo2/after.png" alt="居中广告" />
         </div>
         <div class="meta">
           <h1 class="title">《飞驰人生》</h1>
@@ -291,7 +276,7 @@
     </section>
 
     <section class="focus-card" aria-label="重绘说明">
-      <p class="focus-text">根据用户爱好：<strong>科技</strong>，<strong>中年</strong>，<strong>男性</strong>等标签分析目标风格重绘。</p>
+      <p class="focus-text">根据用户爱好标签重绘：<strong>科技</strong>，<strong>中年</strong>，<strong>男性</strong>等标签分析目标风格重绘。</p>
     </section>
 
     <section class="player-layout" aria-label="播放器二">
@@ -300,7 +285,7 @@
           <div class="frame-bg" aria-hidden="true"></div>
           <div class="frame-dim" aria-hidden="true"></div>
           <div class="badge">静态画面</div>
-          <img class="ad-overlay" src="./before.png" alt="居中广告" />
+          <img class="ad-overlay" src="/demo2/before.png" alt="居中广告" />
         </div>
         <div class="meta">
           <h1 class="title">《飞驰人生》</h1>
