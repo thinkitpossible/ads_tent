@@ -1188,20 +1188,20 @@
   <main class="layout">
     <section class="player-card">
       <div class="player-wrap" id="playerWrap">
-        <video id="videoPlayer" playsinline></video>
+        <video id="videoPlayer" autoplay muted playsinline preload="auto"></video>
         <div class="badge" id="videoBadge">正在准备...</div>
         <div class="season-overlay" id="seasonOverlay">第一集</div>
       </div>
       <div class="meta">
         <h1 class="title">《剑来》</h1>
-        <p class="subtitle">正式播放前，系统先用短广告试探用户是否接受当前广告画风。</p>
+        <p class="subtitle">作为对比原方案播放与剧集赞助有关的70S广告。</p>
       </div>
     </section>
 
     <aside class="right">
       <div class="right-header">
-        <h2 class="right-title">正在热播</h2>
-        <span class="state" id="playState">广告准备中</span>
+        <h2 class="right-title">正在热播（共 3 个广告）</h2>
+        <span class="state" id="playState">共 3 个广告</span>
       </div>
       <ul class="playlist" id="playlist"></ul>
       <div class="tips" id="tipsBox">
@@ -1503,13 +1503,19 @@
       return adCatalog[adNo] || { name: `广告${adNo}`, product: "商品", tone: "待补充", baseStyle: "默认风格", preferredStyle: "偏好风格" };
     }
 
+    function getPrimaryAdNo(index) {
+      return [5, 2, 3][index] || index + 1;
+    }
+
     function renderPlaylist() {
       playlist.innerHTML = adSources.map((src, index) => {
-        const meta = safeAdMeta(index === 0 ? 5 : index + 1);
+        const adNo = getPrimaryAdNo(index);
+        const meta = safeAdMeta(adNo);
+        const fileName = src.split("/").pop();
         return `
           <li class="item ${index === currentIndex ? "active" : ""}">
-            <p class="item-name">${meta.name}</p>
-            <p class="item-desc">主播放试探广告 ${index + 1} · ${meta.baseStyle}</p>
+            <p class="item-name">广告 ${index + 1}/${adSources.length} · ${meta.name}</p>
+            <p class="item-desc">${fileName} · ${meta.product} · ${meta.baseStyle} · ${meta.tone}</p>
           </li>
         `;
       }).join("");
@@ -1587,7 +1593,10 @@
       if (adFinished) return;
       currentIndex = index;
       player.src = adSources[currentIndex];
-      playState.textContent = `试探广告 ${currentIndex + 1}`;
+      player.muted = true;
+      player.defaultMuted = true;
+      player.setAttribute("muted", "");
+      playState.textContent = `广告 ${currentIndex + 1}/${adSources.length}`;
       renderPlaylist();
       if (autoplay) {
         const playPromise = player.play();
