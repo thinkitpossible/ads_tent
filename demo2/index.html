@@ -6,7 +6,6 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-  <base href="./" />
   <title>demo2 - 偏好标签驱动的广告风格重绘</title>
   <style>
     :root {
@@ -94,15 +93,15 @@
       overflow: hidden;
     }
 
-    .frame-bg-img {
+    .frame-bg {
       position: absolute;
       inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+      background-image: url("/demo2/bg.png"), url("bg.png");
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
       transform: scale(1.02);
       z-index: 0;
-      display: block;
     }
 
     .frame-dim {
@@ -133,12 +132,23 @@
       top: 50%;
       transform: translate(-50%, -50%);
       width: min(50%, 420px);
+      height: 50%;
       max-height: 56%;
-      object-fit: contain;
-      display: block;
+      max-width: 420px;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: contain;
       border-radius: 14px;
       box-shadow: 0 18px 38px rgba(0, 0, 0, 0.52);
       z-index: 2;
+    }
+
+    .ad-overlay.after {
+      background-image: url("/demo2/after.png"), url("after.png");
+    }
+
+    .ad-overlay.before {
+      background-image: url("/demo2/before.png"), url("before.png");
     }
 
     .meta {
@@ -262,10 +272,10 @@
     <section class="player-layout" aria-label="播放器一">
       <section class="player-card">
         <div class="player-wrap">
-          <img class="frame-bg-img" alt="" aria-hidden="true" src="bg.png" />
+          <div class="frame-bg" aria-hidden="true"></div>
           <div class="frame-dim" aria-hidden="true"></div>
           <div class="badge">静态画面</div>
-          <img class="ad-overlay" src="after.png" alt="居中广告" />
+          <div class="ad-overlay after" aria-label="居中广告"></div>
         </div>
         <div class="meta">
           <h1 class="title">《飞驰人生》</h1>
@@ -292,10 +302,10 @@
     <section class="player-layout" aria-label="播放器二">
       <section class="player-card">
         <div class="player-wrap">
-          <img class="frame-bg-img" alt="" aria-hidden="true" src="bg.png" />
+          <div class="frame-bg" aria-hidden="true"></div>
           <div class="frame-dim" aria-hidden="true"></div>
           <div class="badge">静态画面</div>
-          <img class="ad-overlay" src="before.png" alt="居中广告" />
+          <div class="ad-overlay before" aria-label="居中广告"></div>
         </div>
         <div class="meta">
           <h1 class="title">《飞驰人生》</h1>
