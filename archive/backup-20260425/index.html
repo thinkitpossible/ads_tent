@@ -1,0 +1,1320 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>广告爆炸视频APP - SPA模拟</title>
+  <style>
+    :root {
+      --bg: #f3f6ff;
+      --surface: #ffffff;
+      --surface-2: #f6f9ff;
+      --text: #16233d;
+      --muted: #667799;
+      --accent: #ffd333;
+      --danger: #ff4157;
+      --danger-2: #ff7a00;
+      --ok: #27d17f;
+      --line: #d6e1f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #f8faff 0%, #edf3ff 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0 10px;
+    }
+
+    .app {
+      width: min(100vw - 20px, 390px);
+      margin: 0 auto;
+      min-height: 100dvh;
+      position: relative;
+      padding-bottom: 78px;
+      border-left: 1px solid #dbe6fb;
+      border-right: 1px solid #dbe6fb;
+      background: #f5f8ff;
+      overflow-x: hidden;
+      box-shadow: 0 10px 36px rgba(41, 70, 126, 0.12);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(247, 251, 255, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+    }
+
+    .topbar.hidden {
+      display: none;
+    }
+
+    .filter-header {
+      display: none;
+      position: sticky;
+      top: 0;
+      z-index: 41;
+      background: rgba(247, 251, 255, 0.96);
+      border-bottom: 1px solid var(--line);
+      padding: 10px 12px;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .filter-header.show {
+      display: flex;
+    }
+
+    .back-btn {
+      border: 1px solid #c7d7f5;
+      background: #ffffff;
+      color: #33507f;
+      border-radius: 10px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .filter-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #1e3258;
+    }
+
+    .search-wrap {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .search-box {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid #c7d7f5;
+      background: #ffffff;
+      color: #4f6186;
+      font-size: 13px;
+    }
+
+    .cat-btn {
+      border: none;
+      border-radius: 10px;
+      padding: 8px 12px;
+      background: linear-gradient(120deg, #ffd333, #ff9b0b);
+      color: #241800;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .quick-tabs {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+
+    .quick-tabs::-webkit-scrollbar { display: none; }
+
+    .quick-tab {
+      border: 1px solid #c7d7f5;
+      background: #ffffff;
+      color: #3a4f79;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .quick-tab.active {
+      background: linear-gradient(120deg, #2f5dc9, #4b7cff);
+      border-color: #6e93ff;
+      color: #fff;
+    }
+
+    .banner {
+      margin-top: 10px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 1px solid #344566;
+      height: 136px;
+    }
+
+    .banner-track {
+      display: flex;
+      height: 100%;
+      transition: transform 0.45s ease;
+    }
+
+    .banner-item {
+      min-width: 100%;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 6px;
+      position: relative;
+    }
+
+    .banner-item::before {
+      content: "广告";
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 11px;
+      color: #2b1b00;
+      background: #ffd333;
+      border-radius: 8px;
+      padding: 2px 6px;
+      font-weight: 700;
+    }
+
+    .banner-item.drama::before {
+      content: "电视剧";
+      color: #0d2b5f;
+      background: #8dc2ff;
+    }
+
+    .b1 { background: linear-gradient(135deg, #511111, #ff4157 45%, #ff9f20); }
+    .b2 { background: linear-gradient(135deg, #173255, #3568d4, #27d1a2); }
+    .b3 { background: linear-gradient(135deg, #2e133f, #9b39c2, #ff55c2); }
+
+    .banner-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+    }
+
+    .banner-sub {
+      font-size: 12px;
+      color: #ffffff;
+      opacity: 0.95;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+    }
+
+    .page {
+      display: none;
+      padding: 12px;
+      animation: fade 0.3s ease;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    @keyframes fade {
+      from { opacity: 0.3; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-title {
+      margin: 14px 2px 10px;
+      font-size: 14px;
+      color: #2a3f67;
+      letter-spacing: 0.5px;
+    }
+
+    .feed, .section-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    #homeFeed {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid #d6e3fb;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .thumb {
+      height: 92px;
+      background: linear-gradient(130deg, #22314d, #2f4c7f 40%, #4f6aa1);
+      position: relative;
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-end;
+      padding: 8px;
+    }
+
+    .duration {
+      font-size: 11px;
+      background: rgba(0, 0, 0, 0.65);
+      border-radius: 6px;
+      padding: 2px 6px;
+    }
+
+    .meta {
+      padding: 8px 10px 10px;
+    }
+
+    .title {
+      font-size: 14px;
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .ad-card {
+      border: 1px solid #7b2f00;
+      background: linear-gradient(120deg, rgba(255, 122, 0, 0.28), rgba(255, 65, 87, 0.2));
+      box-shadow: 0 0 0 1px rgba(255, 188, 49, 0.25) inset;
+    }
+
+    .ad-card .thumb {
+      background: linear-gradient(135deg, #8e2300, #ff4a00 45%, #ffc837);
+    }
+
+    .ad-tag {
+      font-size: 10px;
+      font-weight: 700;
+      color: #341500;
+      background: #ffd333;
+      border-radius: 6px;
+      padding: 1px 6px;
+      margin-left: 6px;
+    }
+
+    .module {
+      margin-top: 14px;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid #d6e3fb;
+      background: linear-gradient(180deg, #ffffff, #f6f9ff);
+    }
+
+    .section-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .mini-card {
+      background: var(--surface-2);
+      border: 1px solid #d8e4fb;
+      border-radius: 10px;
+      padding: 10px;
+      min-height: 68px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      line-height: 1.3;
+    }
+
+    .floating-ad {
+      position: fixed;
+      right: 22px;
+      bottom: 96px;
+      z-index: 55;
+      border: none;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #230f00;
+      background: linear-gradient(120deg, #ffeb3b, #ff6f00);
+      box-shadow: 0 8px 24px rgba(255, 117, 24, 0.46);
+      animation: pulse 1.8s infinite;
+      cursor: pointer;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    .bottom-nav {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 0;
+      width: 100%;
+      max-width: 390px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      background: #ffffff;
+      border-top: 1px solid var(--line);
+      z-index: 50;
+    }
+
+    .nav-btn {
+      padding: 10px 4px 12px;
+      text-align: center;
+      font-size: 12px;
+      color: #6d7ea3;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .nav-btn.active {
+      color: var(--accent);
+      text-shadow: 0 0 8px rgba(255, 211, 51, 0.3);
+    }
+
+    .tvp-wrap {
+      background: #0a0d14;
+      margin: 0;
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .tvp-head {
+      position: absolute;
+      z-index: 4;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      color: #fff;
+      font-size: 13px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+    }
+
+    .tvp-screen {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background:
+        linear-gradient(to top, rgba(0, 0, 0, 0.68), rgba(0, 0, 0, 0.1)),
+        url("https://puui.qpic.cn/vpic_cover/w41025my54z/w41025my54z_hz.jpg/0") center/cover no-repeat;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      color: #fff;
+      padding: 10px;
+      position: relative;
+    }
+
+    .tvp-progress {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .tvp-progress > span {
+      display: block;
+      width: 36%;
+      height: 100%;
+      background: #ffce3d;
+    }
+
+    .tvp-time { font-size: 12px; }
+    .tvp-full { font-size: 12px; opacity: 0.9; }
+
+    .tvp-body {
+      padding: 12px 0 0;
+      display: grid;
+      gap: 10px;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .tvp-card {
+      background: #fff;
+      border: 1px solid #d6e3fb;
+      border-radius: 12px;
+      padding: 10px;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .tvp-title {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 8px;
+    }
+
+    .tvp-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12px;
+      color: #6b7da5;
+    }
+
+    .tvp-vip {
+      font-size: 10px;
+      background: linear-gradient(120deg, #ffd978, #f6a400);
+      color: #5b3a00;
+      border-radius: 6px;
+      padding: 1px 6px;
+      font-weight: 700;
+    }
+
+    .tvp-ops {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+      text-align: center;
+      font-size: 12px;
+      color: #465c89;
+    }
+
+    .tvp-op i {
+      font-style: normal;
+      display: block;
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+
+    .tvp-tabs {
+      display: flex;
+      gap: 16px;
+      font-size: 14px;
+      border-bottom: 1px solid #e0e8fa;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+    }
+
+    .tvp-tabs .active {
+      font-weight: 700;
+      color: #1c335f;
+      position: relative;
+    }
+
+    .tvp-tabs .active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -8px;
+      height: 3px;
+      border-radius: 999px;
+      background: #ffcd32;
+    }
+
+    .tvp-eps {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .tvp-eps::-webkit-scrollbar { display: none; }
+
+    .tvp-ep {
+      min-width: 58px;
+      text-align: center;
+      padding: 7px 8px;
+      border-radius: 8px;
+      border: 1px solid #ccd9f7;
+      background: #f9fbff;
+      color: #425982;
+      font-size: 13px;
+    }
+
+    .tvp-ep.active {
+      background: #1f3d77;
+      color: #fff;
+      border-color: #1f3d77;
+    }
+
+    .tvp-rec {
+      display: grid;
+      gap: 10px;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .tvp-rec-item {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .tvp-rec-item > div {
+      min-width: 0;
+    }
+
+    .tvp-rec-thumb {
+      width: 120px;
+      height: 68px;
+      border-radius: 8px;
+      border: 1px solid #cad8f7;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .tvp-rec-title {
+      font-size: 14px;
+      line-height: 1.35;
+      margin-bottom: 4px;
+      word-break: break-word;
+    }
+    .tvp-rec-sub { font-size: 12px; color: #6b7da5; }
+
+
+    .splash-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 95;
+      background:
+        linear-gradient(to top, rgba(0, 0, 0, 0.58), rgba(0, 0, 0, 0.2) 42%, rgba(0, 0, 0, 0.55)),
+        url("http://ossweb-img.qq.com/images/roco/act/a20110727lkwg/wallpaper/7_1_1024.jpg") center/cover no-repeat;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+    }
+
+    .splash-mask.show {
+      display: flex;
+    }
+
+    .splash-card {
+      width: 100%;
+      max-width: 420px;
+      border: 1px solid rgba(255, 211, 51, 0.55);
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff7e3;
+      padding: 16px 14px;
+      text-align: center;
+      backdrop-filter: blur(4px);
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
+    }
+
+    .splash-badge {
+      display: inline-block;
+      background: #ffd333;
+      color: #3d1f00;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 2px 10px;
+      margin-bottom: 10px;
+    }
+
+    .splash-title {
+      font-size: 30px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+      text-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
+    }
+
+    .splash-sub {
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 14px;
+      opacity: 0.97;
+    }
+
+    .splash-shake-btn {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      padding: 11px 10px;
+      background: linear-gradient(120deg, #ffe45d, #ffb300);
+      color: #3b1d00;
+      font-weight: 900;
+      cursor: pointer;
+      animation: shakePulse 1.2s infinite;
+    }
+
+    .splash-tip {
+      margin-top: 10px;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .splash-countdown {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #ffe18f;
+      font-weight: 700;
+    }
+
+    @keyframes shakePulse {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-3px); }
+      75% { transform: translateX(3px); }
+    }
+
+    .list-simple .card .thumb { height: 78px; }
+
+    .vip-ad {
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid #7a6000;
+      background: linear-gradient(130deg, rgba(255, 211, 51, 0.22), rgba(255, 122, 0, 0.18));
+      margin-bottom: 12px;
+    }
+
+    .event-banner {
+      border-radius: 12px;
+      border: 1px solid #6030a8;
+      padding: 14px;
+      background: linear-gradient(120deg, #34115f, #5f20c2 50%, #ac45ff);
+      margin-bottom: 12px;
+    }
+
+    .rank-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .rank-card {
+      display: grid;
+      grid-template-columns: 84px 1fr;
+      gap: 10px;
+      background: #ffffff;
+      border: 1px solid #d6e3fb;
+      border-radius: 12px;
+      padding: 8px;
+      align-items: center;
+    }
+
+    .rank-poster {
+      width: 84px;
+      height: 120px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid #cad9f7;
+      background: linear-gradient(135deg, #2a3550, #3f5788);
+    }
+
+    .rank-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .rank-sub {
+      color: #5f749c;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <div class="topbar" id="globalTopbar"></div>
+    <div class="filter-header" id="filterHeader">
+      <button class="back-btn" id="filterBackBtn">返回首页</button>
+      <div class="filter-title">筛选页 · 近期热播电视剧榜单</div>
+    </div>
+    <main id="pages"></main>
+  </div>
+
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="nav-btn active" data-route="home">首页</button>
+    <button class="nav-btn" data-route="channel">频道</button>
+    <button class="nav-btn" data-route="player">播放</button>
+    <button class="nav-btn" data-route="search">搜索</button>
+    <button class="nav-btn" data-route="me">我的</button>
+  </nav>
+
+  <div class="splash-mask show" id="splashMask">
+    <div class="splash-card">
+      <div class="splash-badge">开屏广告</div>
+      <div class="splash-title">洛克王国</div>
+      <div class="splash-sub">摇一摇解锁神宠，进入内容前先参与互动广告</div>
+      <button class="splash-shake-btn" id="shakeBtn">摇一摇进入（点击模拟）</button>
+      <div class="splash-tip">支持手机摇一摇；桌面端可点击按钮模拟</div>
+      <div class="splash-countdown" id="splashCountdown">5 秒后自动关闭</div>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      route: "home",
+      currentVideo: null,
+      bannerIndex: 0,
+      bannerCount: 5,
+      homeItemsLoaded: 12,
+      channelItemsLoaded: 8
+    };
+
+    let searchMarqueeTimer = null;
+
+    const adCopies = [
+      "新用户立领 888 元礼包，点我解锁隐藏福利",
+      "你的网络可能存在风险，立即加速保护",
+      "限时秒杀：会员年卡 2 折，仅剩 00:03:21",
+      "看完这个广告，抽 iPhone 机会+1"
+    ];
+
+    const brandFlowAds = [
+      {
+        name: "小米汽车",
+        slogan: "SU7 / YU7 体验季，预约试驾赢限量周边",
+        link: "https://www.xiaomiev.com/",
+        image: "https://s1.xiaomiev.com/activity-outer-assets/0328/images/home/section4x1281.jpg",
+        logo: "https://www.xiaomiev.com/favicon.ico"
+      },
+      {
+        name: "三角洲行动",
+        slogan: "回声赛季火热开启，立即登录官网查看更新",
+        link: "https://df.qq.com/",
+        image: "https://df.qq.com/favicon.ico",
+        logo: "https://df.qq.com/favicon.ico"
+      },
+      {
+        name: "无畏契约",
+        slogan: "VALORANT国服活动上线，领专属福利",
+        link: "https://val.qq.com/main.html",
+        image: "https://val.qq.com/favicon.ico",
+        logo: "https://val.qq.com/favicon.ico"
+      },
+      {
+        name: "洛克王国",
+        slogan: "摇一摇抽神宠，经典IP联动活动进行中",
+        link: "https://roco.qq.com/",
+        image: "http://ossweb-img.qq.com/images/roco/act/a20110727lkwg/wallpaper/7_1_1024.jpg",
+        logo: "https://roco.qq.com/favicon.ico"
+      }
+    ];
+
+    const hotDramaKeywords = [
+      "蜜语纪",
+      "方圆八百米",
+      "佳偶天成",
+      "逐玉",
+      "有港回信",
+      "白日提灯",
+      "掌中刃",
+      "隐身的名字",
+      "扫黑风暴",
+      "庆余年第二季"
+    ];
+
+    const filterDramas = [
+      {
+        name: "密语记",
+        poster: "https://image.tmdb.org/t/p/w500/4ZK9f8l8xM8k6Hf6mL0W4xkqH2t.jpg",
+        source: "图片来源参考：TMDB/腾讯视频词条"
+      },
+      {
+        name: "方圆八百米",
+        poster: "https://image.tmdb.org/t/p/w500/s9vY5X2WvGQXv8uB7L3c2ZJ9r2S.jpg",
+        source: "图片来源参考：TMDB《方圆八百米》海报页"
+      },
+      {
+        name: "百日提灯",
+        poster: "https://image.tmdb.org/t/p/w500/zQ2sQJ7Wn3f7fL5fJx2z4w8x3dN.jpg",
+        source: "图片来源参考：腾讯视频热搜同名剧"
+      },
+      {
+        name: "佳偶天成",
+        poster: "https://image.tmdb.org/t/p/w500/2nCt7zG4y7L2p8N5x4v2b8f9v0Q.jpg",
+        source: "图片来源参考：腾讯视频热搜同名剧"
+      },
+      {
+        name: "逐玉",
+        poster: "https://image.tmdb.org/t/p/w500/8Wv8QJr7m4p5D8d9w2m1Y2h6j5Q.jpg",
+        source: "图片来源参考：腾讯视频热搜同名剧"
+      }
+    ];
+
+    const tencentPoster = (vid) => `https://puui.qpic.cn/vpic_cover/${vid}/${vid}_hz.jpg/0`;
+
+    // 首页推荐素材：来自 v.qq.com 剧集页标题/演员/类型信息 + 对应 vid 封面图
+    const homeVideos = [
+      { id: 1, title: "蜜语纪_01", author: "钟汉良 / 朱珠 · 都市爱情", poster: tencentPoster("h4102lz1osw"), source: "https://v.qq.com/x/cover/mzc002006dzzunf/h4102lz1osw.html" },
+      { id: 2, title: "蜜语纪_18", author: "李梦 / 经超 · 女性成长", poster: tencentPoster("q41021ouyi1"), source: "https://v.qq.com/x/cover/mzc002006dzzunf/q41021ouyi1.html" },
+      { id: 3, title: "方圆八百米_01", author: "丁勇岱 / 许凯 · 悬疑", poster: tencentPoster("w41025my54z"), source: "https://v.qq.com/x/cover/mzc002007tp60ap/w41025my54z.html" },
+      { id: 4, title: "方圆八百米_13", author: "邓恩熙 / 胡可 · 警匪较量", poster: tencentPoster("p4102b1mncx"), source: "https://v.qq.com/x/cover/mzc002007tp60ap/p4102b1mncx.html" },
+      { id: 5, title: "佳偶天成_01", author: "古装爱情 · 腾讯视频热播", poster: tencentPoster("v4102yte9jg"), source: "https://v.qq.com/x/cover/mzc002009vpcup6/v4102yte9jg.html" },
+      { id: 6, title: "佳偶天成_抢先看", author: "剧情片段 · 腾讯视频热播", poster: tencentPoster("d4102yp2slk"), source: "https://v.qq.com/x/cover/mzc002009vpcup6/d4102yp2slk.html" },
+      { id: 7, title: "逐玉_高能片段", author: "古装爱情 · 腾讯视频热播", poster: tencentPoster("z3193qkc2vk"), source: "https://v.qq.com/x/cover/mzc00200djsz2lc/z3193qkc2vk.html" },
+      { id: 8, title: "逐玉_姻缘树祈福", author: "热门片段 · 腾讯视频热播", poster: tencentPoster("v3197k74vbn"), source: "https://m.v.qq.com/x/m/play?cid=mzc00200djsz2lc&vid=v3197k74vbn" },
+      { id: 9, title: "白日提灯_01", author: "迪丽热巴 / 陈飞宇 · 古装爱情", poster: tencentPoster("q4102kn7dr9"), source: "https://v.qq.com/x/cover/mzc00200wm1zlyh/q4102kn7dr9.html" },
+      { id: 10, title: "白日提灯_预告片", author: "原著改编 · 仙侠奇幻", poster: tencentPoster("d4102hi267s"), source: "https://m.v.qq.com/x/m/play?vid=d4102hi267s&cid=mzc00200wm1zlyh" },
+      { id: 11, title: "佳偶天成_剧情片段", author: "古装热播 · 腾讯视频", poster: tencentPoster("g4102uoye0m"), source: "https://v.qq.com/x/cover/mzc002009vpcup6/g4102uoye0m.html" },
+      { id: 12, title: "佳偶天成_成亲片段", author: "古装热播 · 腾讯视频", poster: tencentPoster("a41023ymmdf"), source: "https://v.qq.com/x/cover/mzc002009vpcup6/a41023ymmdf.html" },
+      { id: 13, title: "逐玉_人物互动", author: "热门片段 · 腾讯视频", poster: tencentPoster("e4102lpoy8u"), source: "https://m.v.qq.com/x/m/play?cid=mzc00200djsz2lc&vid=e4102lpoy8u" },
+      { id: 14, title: "逐玉_家庭线片段", author: "剧情片段 · 腾讯视频", poster: tencentPoster("m4102eliduf"), source: "https://v.qq.com/x/cover/mzc00200djsz2lc/m4102eliduf.html" },
+      { id: 15, title: "逐玉_父母牌位片段", author: "剧情高能 · 腾讯视频", poster: tencentPoster("i41020qvvou"), source: "https://v.qq.com/x/cover/mzc00200djsz2lc/i41020qvvou.html" },
+      { id: 16, title: "方圆八百米_12", author: "情感罪案 · 腾讯视频", poster: tencentPoster("b4102w71h6q"), source: "https://v.qq.com/x/cover/mzc002007tp60ap/b4102w71h6q.html" },
+      { id: 17, title: "方圆八百米_11", author: "情感罪案 · 腾讯视频", poster: tencentPoster("q4102s2aa9k"), source: "https://v.qq.com/x/cover/mzc002007tp60ap/q4102s2aa9k.html" },
+      { id: 18, title: "白日提灯_预告片", author: "古装爱情 · 腾讯视频", poster: tencentPoster("d4102l2bnk9"), source: "https://v.qq.com/x/cover/mzc00200wm1zlyh/d4102l2bnk9.html" }
+    ];
+
+    const channelVideos = Array.from({ length: 30 }, (_, i) => ({
+      id: i + 101,
+      title: `频道精选内容 ${i + 1}：爆笑剪辑合集`,
+      author: `${i + 2}.1万点赞 · 娱乐频道`
+    }));
+
+    const searchResults = Array.from({ length: 24 }, (_, i) => ({
+      id: i + 301,
+      title: `搜索结果 ${i + 1}：你可能想看的视频`,
+      author: `${9 + i}万热度 · 相关内容`
+    }));
+
+    const pages = document.getElementById("pages");
+    const topbar = document.getElementById("globalTopbar");
+    const filterHeader = document.getElementById("filterHeader");
+    const splashMask = document.getElementById("splashMask");
+    const splashCountdown = document.getElementById("splashCountdown");
+
+    function makeTopbar() {
+      topbar.innerHTML = `
+        <div class="search-wrap">
+          <div class="search-box" id="searchMarquee">热搜剧：${hotDramaKeywords[0]}</div>
+          <button class="cat-btn" id="filterBtn">筛选</button>
+        </div>
+        <div class="quick-tabs">
+          <span class="quick-tab">短视频</span>
+          <span class="quick-tab active">首页</span>
+          <span class="quick-tab">剑来</span>
+          <span class="quick-tab">电视剧</span>
+          <span class="quick-tab">动漫</span>
+        </div>
+        <div class="banner">
+          <div class="banner-track" id="bannerTrack">
+            <div class="banner-item b3" style="background-image: linear-gradient(130deg, rgba(41, 8, 8, 0.35), rgba(20, 4, 4, 0.45)), url('ad1.png'); background-size: cover; background-position: center;">
+              <div class="banner-title">JD双11提前购会场</div>
+              <div class="banner-sub">每满300减50，爆款家电限时直降</div>
+            </div>
+            <div class="banner-item b1" style="background-image: linear-gradient(130deg, rgba(45,22,8,.35), rgba(28,12,2,.45)), url('http://ossweb-img.qq.com/images/roco/act/a20110727lkwg/wallpaper/7_1_1024.jpg'); background-size: cover; background-position: center;">
+              <div class="banner-title">洛克王国摇一摇赢神宠</div>
+              <div class="banner-sub">经典IP联动广告 · 点击参与活动</div>
+            </div>
+            <div class="banner-item drama b2" style="background-image: linear-gradient(130deg, rgba(25,37,65,.35), rgba(18,25,42,.4)), url('${tencentPoster("w41025my54z")}'); background-size: cover; background-position: center;">
+              <div class="banner-title">热播剧《方圆八百米》</div>
+              <div class="banner-sub">丁勇岱 / 许凯 · 情感罪案题材</div>
+            </div>
+            <div class="banner-item drama b1" style="background-image: linear-gradient(130deg, rgba(35,24,52,.35), rgba(20,13,31,.4)), url('${tencentPoster("q4102kn7dr9")}'); background-size: cover; background-position: center;">
+              <div class="banner-title">热播剧《白日提灯》</div>
+              <div class="banner-sub">迪丽热巴 / 陈飞宇 · 古装爱情</div>
+            </div>
+            <div class="banner-item b2" style="background-image: linear-gradient(130deg, rgba(24, 26, 33, 0.35), rgba(10, 12, 18, 0.45)), url('https://s1.xiaomiev.com/activity-outer-assets/0328/images/home/section4x1281.jpg'); background-size: cover; background-position: center;">
+              <div class="banner-title">小米汽车 SU7 / YU7 体验季</div>
+              <div class="banner-sub">高性能智能座舱，预约试驾赢限量周边</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const filterBtn = document.getElementById("filterBtn");
+      if (filterBtn) {
+        filterBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          switchRoute("hotlist", false);
+        });
+      }
+    }
+
+    function startSearchMarquee() {
+      const box = document.getElementById("searchMarquee");
+      if (!box) return;
+      if (searchMarqueeTimer) clearInterval(searchMarqueeTimer);
+      let idx = 0;
+      searchMarqueeTimer = setInterval(() => {
+        idx = (idx + 1) % hotDramaKeywords.length;
+        box.textContent = `热搜剧：${hotDramaKeywords[idx]}`;
+      }, 1800);
+    }
+
+    function renderHotlist() {
+      let html = '<section class="page" data-page="hotlist">';
+      html += '<h3 class="section-title">近期热播电视剧榜单</h3>';
+      html += '<div class="rank-list">';
+      filterDramas.forEach((d, i) => {
+        html += `
+          <article class="rank-card">
+            <img class="rank-poster" src="${d.poster}" alt="${d.name}" onerror="this.src='https://dummyimage.com/240x340/24385f/eaf1ff&text=${encodeURIComponent(d.name)}';">
+            <div>
+              <div class="rank-title">TOP ${i + 1} · ${d.name}</div>
+              <div class="rank-sub">近期热播 · 筛选结果页</div>
+              <div class="rank-sub">${d.source}</div>
+            </div>
+          </article>
+        `;
+      });
+      html += '</div></section>';
+      return html;
+    }
+
+    function videoCard(item, withAdSkin = false) {
+      const adTag = withAdSkin ? '<span class="ad-tag">推广</span>' : "";
+      const thumbStyle = item.poster ? `style="background-image: linear-gradient(130deg, rgba(34,49,77,.2), rgba(47,76,127,.25)), url('${item.poster}'); background-size: cover; background-position: center;"` : "";
+      return `
+        <article class="card ${withAdSkin ? "ad-card" : ""}" data-video-id="${item.id}">
+          <div class="thumb" ${thumbStyle}>
+            <span class="duration">${Math.floor(Math.random() * 5) + 1}:${String(Math.floor(Math.random() * 59)).padStart(2, "0")}</span>
+          </div>
+          <div class="meta">
+            <div class="title">${item.title}${adTag}</div>
+            <div class="sub">${item.author}</div>
+          </div>
+        </article>
+      `;
+    }
+
+    function nativeAdCard() {
+      return `
+        <article class="card ad-card">
+          <div class="thumb"><span class="duration">00:30</span></div>
+          <div class="meta">
+            <div class="title">这条内容和你兴趣高度匹配，建议马上观看<span class="ad-tag">广告</span></div>
+            <div class="sub">品牌合作 · 赞助内容 · 伪装推荐</div>
+          </div>
+        </article>
+      `;
+    }
+
+    function brandAdCard(ad) {
+      return `
+        <article class="card ad-card" data-link="${ad.link}">
+          <div class="thumb" style="background-image: linear-gradient(135deg, rgba(142,35,0,.78), rgba(255,74,0,.62)), url('${ad.image}'); background-size: cover; background-position: center;">
+            <span class="duration">推广</span>
+          </div>
+          <div class="meta">
+            <div class="title">${ad.name}<span class="ad-tag">广告</span></div>
+            <div class="sub">${ad.slogan}</div>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderHome() {
+      let html = '<section class="page active" data-page="home">';
+      html += '<div class="feed" id="homeFeed">';
+      homeVideos.slice(0, state.homeItemsLoaded).forEach((item, idx) => {
+        html += videoCard(item);
+        if ((idx + 1) % 3 === 0) {
+          const ad = brandFlowAds[Math.floor(idx / 3) % brandFlowAds.length];
+          html += brandAdCard(ad);
+        }
+      });
+      html += nativeAdCard();
+      html += "</div>";
+
+      html += `
+        <section class="module">
+          <h3 class="section-title">热剧专区</h3>
+          <div class="section-grid">
+            <div class="mini-card">古装热播：一口气看完</div>
+            <div class="mini-card">悬疑速看：凶手竟然是...</div>
+            <div class="mini-card ad-card">中插广告位：年度神卡办理</div>
+            <div class="mini-card">高分电影：豆瓣9.2</div>
+          </div>
+        </section>
+      `;
+
+      html += `
+        <section class="module">
+          <h3 class="section-title">综艺专区</h3>
+          <div class="section-grid">
+            <div class="mini-card">爆笑名场面精选</div>
+            <div class="mini-card ad-card">中插广告位：开屏免广告包</div>
+            <div class="mini-card">明星同款挑战赛</div>
+            <div class="mini-card">社交热榜TOP片段</div>
+          </div>
+        </section>
+      `;
+
+      html += "</section>";
+      return html;
+    }
+
+    function renderChannel() {
+      let html = '<section class="page" data-page="channel">';
+      html += '<h3 class="section-title">频道页 · 今日爆款</h3>';
+      html += '<div class="card ad-card"><div class="thumb"></div><div class="meta"><div class="title">频道头图Banner广告：热卖课程限时开团<span class="ad-tag">广告</span></div><div class="sub">频道冠名赞助</div></div></div>';
+      html += '<div class="feed list-simple" id="channelFeed">';
+      channelVideos.slice(0, state.channelItemsLoaded).forEach((item, idx) => {
+        html += videoCard(item);
+        if ((idx + 1) % 3 === 0) {
+          html += videoCard(
+            { id: 9200 + idx, title: `频道信息流广告 ${idx + 1}：点击领取优惠券`, author: "品牌内容投放" },
+            true
+          );
+        }
+      });
+      html += "</div></section>";
+      return html;
+    }
+
+    function renderPlayer() {
+      const title = state.currentVideo ? state.currentVideo.title : "尚未选择视频";
+      return `
+        <section class="page" data-page="player">
+          <div class="tvp-wrap">
+            <div class="tvp-head">
+              <div>← 返回</div>
+              <div>清晰度  投屏  ⋯</div>
+            </div>
+            <div class="tvp-screen">
+              <div class="tvp-time">14:23 / 39:48</div>
+              <div class="tvp-full">全屏</div>
+              <div class="tvp-progress"><span></span></div>
+            </div>
+          </div>
+
+          <div class="tvp-body">
+            <section class="tvp-card">
+              <div class="tvp-title">${title}：警匪父子交锋，真相步步逼近</div>
+              <div class="tvp-meta">
+                <span class="tvp-vip">VIP</span>
+                <span>2026 · 悬疑 · 警匪</span>
+                <span>92.6万次观看</span>
+              </div>
+            </section>
+
+            <section class="tvp-card">
+              <div class="tvp-ops">
+                <div class="tvp-op"><i>⬇</i>下载</div>
+                <div class="tvp-op"><i>🖥</i>投屏</div>
+                <div class="tvp-op"><i>💬</i>讨论</div>
+                <div class="tvp-op"><i>⭐</i>加追</div>
+                <div class="tvp-op"><i>↗</i>分享</div>
+              </div>
+            </section>
+
+            <section class="tvp-card">
+              <div class="tvp-tabs"><span class="active">选集</span><span>简介</span><span>评论</span></div>
+              <div class="tvp-eps">
+                <span class="tvp-ep">01</span><span class="tvp-ep">02</span><span class="tvp-ep">03</span>
+                <span class="tvp-ep">04</span><span class="tvp-ep">05</span><span class="tvp-ep">06</span>
+                <span class="tvp-ep">07</span><span class="tvp-ep">08</span><span class="tvp-ep">09</span>
+                <span class="tvp-ep">10</span><span class="tvp-ep">11</span><span class="tvp-ep">12</span>
+                <span class="tvp-ep active">13</span>
+              </div>
+            </section>
+
+            <section class="tvp-card ad-card">
+              <div class="thumb" style="background-image: linear-gradient(130deg, rgba(41, 8, 8, 0.35), rgba(20, 4, 4, 0.45)), url('ad1.png'); background-size: cover; background-position: center;"></div>
+              <div class="meta">
+                <div class="title">JD双11提前购会场<span class="ad-tag">广告</span></div>
+                <div class="sub">每满300减50，爆款家电限时直降</div>
+              </div>
+            </section>
+
+            <section class="tvp-card">
+              <div class="tvp-tabs"><span class="active">相关推荐</span></div>
+              <div class="tvp-rec">
+                <article class="tvp-rec-item">
+                  <div class="tvp-rec-thumb" style="background-image:url('https://puui.qpic.cn/vpic_cover/q4102kn7dr9/q4102kn7dr9_hz.jpg/0')"></div>
+                  <div>
+                    <div class="tvp-rec-title">白日提灯：四百岁灵主初遇凡人将军</div>
+                    <div class="tvp-rec-sub">古装爱情 · 热播中</div>
+                  </div>
+                </article>
+                <article class="tvp-rec-item">
+                  <div class="tvp-rec-thumb" style="background-image:url('https://puui.qpic.cn/vpic_cover/v4102yte9jg/v4102yte9jg_hz.jpg/0')"></div>
+                  <div>
+                    <div class="tvp-rec-title">佳偶天成：任嘉伦战鬼重生护太平</div>
+                    <div class="tvp-rec-sub">古装爱情 · 更新中</div>
+                  </div>
+                </article>
+              </div>
+            </section>
+          </div>
+          
+          <div class="card">
+            <div class="sub">登录后可发送弹幕与评论，参与边看边聊。</div>
+            <div style="margin-top:8px;border:1px solid #ccdaf8;background:#f8fbff;border-radius:999px;padding:8px 12px;color:#7a89ad;font-size:12px;">发一条友善评论...</div>
+          </div>
+        </section>
+      `;
+    }
+
+    function renderSearch() {
+      let html = '<section class="page" data-page="search"><h3 class="section-title">搜索结果：共 24 条</h3><div class="feed list-simple">';
+      searchResults.forEach((item, idx) => {
+        html += videoCard(item);
+        if ((idx + 1) % 4 === 0) {
+          html += videoCard(
+            { id: 9500 + idx, title: `广告结果 ${idx + 1}：你可能感兴趣`, author: "竞价排名 · 推广内容" },
+            true
+          );
+        }
+      });
+      html += "</div></section>";
+      return html;
+    }
+
+    function renderMe() {
+      return `
+        <section class="page" data-page="me">
+          <div class="vip-ad">
+            <h3 style="margin-bottom:6px;">VIP 会员推广</h3>
+            <p style="font-size:13px; color:#fff9d7;">开通会员减少 20% 广告时长（仍会看到品牌合作内容）。</p>
+          </div>
+          <div class="event-banner">
+            <h3 style="margin-bottom:6px;">活动Banner</h3>
+            <p style="font-size:13px;">签到7天抽年卡，需每天观看任务广告。</p>
+          </div>
+          <div class="feed">
+            ${videoCard({ id: 7771, title: "观看历史", author: "你最近看了 87 条内容" })}
+            ${videoCard({ id: 7772, title: "收藏列表", author: "共收藏 52 条视频" })}
+            ${videoCard({ id: 7773, title: "任务中心", author: "再看 3 条广告可领奖励" }, true)}
+          </div>
+        </section>
+      `;
+    }
+
+    function render() {
+      makeTopbar();
+      pages.innerHTML = renderHome() + renderChannel() + renderPlayer() + renderSearch() + renderMe() + renderHotlist();
+      switchRoute(state.route, false);
+      bindVideoClicks();
+      startSearchMarquee();
+    }
+
+    function switchRoute(route, showInterruption = true) {
+      state.route = route;
+      document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
+      const page = document.querySelector(`[data-page="${route}"]`);
+      if (page) page.classList.add("active");
+
+      const isFilterPage = route === "hotlist";
+      const hideGlobalTopbar = isFilterPage || route === "player";
+      topbar.classList.toggle("hidden", hideGlobalTopbar);
+      filterHeader.classList.toggle("show", isFilterPage);
+
+      document.querySelectorAll(".nav-btn").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.route === route);
+      });
+
+    }
+
+    function bindVideoClicks() {
+      document.querySelectorAll("[data-link]").forEach((node) => {
+        node.addEventListener("click", () => {
+          const link = node.getAttribute("data-link");
+          if (link) window.open(link, "_blank");
+        });
+      });
+
+      document.querySelectorAll("[data-video-id]").forEach((node) => {
+        node.addEventListener("click", () => {
+          state.currentVideo = { title: node.querySelector(".title").innerText.replace("推广", "").replace("广告", "") };
+          render();
+          switchRoute("player", true);
+        });
+      });
+    }
+
+    function rotateBanner() {
+      state.bannerIndex = (state.bannerIndex + 1) % state.bannerCount;
+      const track = document.getElementById("bannerTrack");
+      if (track) {
+        track.style.transform = `translateX(-${state.bannerIndex * 100}%)`;
+      }
+    }
+
+    function handleInfiniteAds() {
+      const nearBottom = window.innerHeight + window.scrollY > document.body.offsetHeight - 220;
+      if (!nearBottom) return;
+
+      if (state.route === "home" && state.homeItemsLoaded < homeVideos.length) {
+        state.homeItemsLoaded = Math.min(state.homeItemsLoaded + 6, homeVideos.length);
+        render();
+      } else if (state.route === "channel" && state.channelItemsLoaded < channelVideos.length) {
+        state.channelItemsLoaded = Math.min(state.channelItemsLoaded + 4, channelVideos.length);
+        render();
+      }
+    }
+
+    document.getElementById("bottomNav").addEventListener("click", (e) => {
+      const btn = e.target.closest(".nav-btn");
+      if (!btn) return;
+      switchRoute(btn.dataset.route, true);
+    });
+    document.getElementById("filterBackBtn").addEventListener("click", () => switchRoute("home", false));
+
+    function closeSplash() {
+      splashMask.classList.remove("show");
+    }
+
+    function jumpToRoco() {
+      window.location.href = "https://rocom.qq.com/main/";
+    }
+
+    function initShakeSplash() {
+      const threshold = 18;
+      let last = { x: null, y: null, z: null };
+      let cooldown = false;
+      let seconds = 5;
+
+      document.getElementById("shakeBtn").addEventListener("click", jumpToRoco);
+      splashMask.addEventListener("click", jumpToRoco);
+
+      const timer = setInterval(() => {
+        seconds -= 1;
+        if (seconds <= 0) {
+          clearInterval(timer);
+          if (splashMask.classList.contains("show")) closeSplash();
+          return;
+        }
+        splashCountdown.textContent = `${seconds} 秒后自动关闭`;
+      }, 1000);
+
+      window.addEventListener("devicemotion", (e) => {
+        if (!splashMask.classList.contains("show") || cooldown) return;
+        const acc = e.accelerationIncludingGravity;
+        if (!acc) return;
+
+        const x = acc.x ?? 0;
+        const y = acc.y ?? 0;
+        const z = acc.z ?? 0;
+
+        if (last.x !== null) {
+          const delta = Math.abs(x - last.x) + Math.abs(y - last.y) + Math.abs(z - last.z);
+          if (delta > threshold) {
+            cooldown = true;
+            jumpToRoco();
+          }
+        }
+        last = { x, y, z };
+      });
+    }
+
+    window.addEventListener("scroll", handleInfiniteAds);
+    setInterval(rotateBanner, 2600);
+    render();
+    initShakeSplash();
+  </script>
+</body>
+</html>

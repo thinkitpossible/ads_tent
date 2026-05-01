@@ -1,0 +1,2163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>demo1 - 跳过行为驱动的广告偏好分析</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #151a22;
+      --panel-2: #1b2230;
+      --panel-3: #0f141d;
+      --text: #f5f7fb;
+      --muted: #97a3b6;
+      --line: #2a3242;
+      --brand: #23d07a;
+      --brand-2: #86efb1;
+      --warning: #ffb347;
+      --danger: #ff6a6f;
+      --shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(35, 208, 122, 0.11), transparent 24%),
+        linear-gradient(180deg, #0b0f15 0%, #0e131b 100%);
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      height: 58px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(8, 11, 16, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .logo {
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: var(--brand);
+    }
+
+    .topbar-right {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .layout {
+      max-width: 1360px;
+      margin: 20px auto;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 16px;
+    }
+
+    .player-card,
+    .right,
+    .analysis-card,
+    .demo-note-card,
+    .pipeline-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+      box-shadow: var(--shadow);
+    }
+
+    .player-card {
+      overflow: hidden;
+    }
+
+    .player-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      overflow: hidden;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #000;
+    }
+
+    .badge,
+    .stage-badge {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(0, 0, 0, 0.45);
+      color: #fff;
+      font-size: 12px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .skip-btn,
+    .center-start-btn,
+    .action-btn {
+      border: 1px solid rgba(255, 255, 255, 0.26);
+      border-radius: 999px;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+    }
+
+    .skip-btn:hover,
+    .center-start-btn:hover,
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.44);
+    }
+
+    .action-btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .skip-btn:hover {
+      transform: translate(-50%, -1px);
+    }
+
+    .center-start-btn:hover {
+      transform: translate(-50%, calc(-50% - 1px));
+    }
+
+    .skip-btn:disabled,
+    .center-start-btn:disabled,
+    .action-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .skip-btn {
+      position: absolute;
+      left: 50%;
+      bottom: 56px;
+      transform: translateX(-50%);
+      z-index: 5;
+      padding: 10px 18px;
+      font-size: 14px;
+    }
+
+    .center-start-btn {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 5;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .action-btn {
+      margin-top: 10px;
+      padding: 8px 16px;
+      font-size: 13px;
+    }
+
+    .season-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: clamp(34px, 5vw, 76px);
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      text-shadow: 0 8px 28px rgba(0, 0, 0, 0.8);
+    }
+
+    .season-overlay.show,
+    .hidden-force {
+      display: flex;
+    }
+
+    .meta {
+      padding: 16px 18px 18px;
+      background: var(--panel);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .right {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .right-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .right-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .state {
+      color: var(--brand-2);
+      font-size: 12px;
+    }
+
+    .playlist {
+      list-style: none;
+      margin: 0;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+    }
+
+    .item {
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 12px;
+      background: var(--panel-2);
+      transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+    }
+
+    .item.active {
+      border-color: rgba(35, 208, 122, 0.46);
+      background: rgba(35, 208, 122, 0.09);
+    }
+
+    .item-name {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .item-desc {
+      margin: 6px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .tips {
+      padding: 14px 16px 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .compare-label {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 0 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .compare-section {
+      margin-top: 10px;
+      margin-bottom: 0;
+    }
+
+    .analysis-section {
+      max-width: 1360px;
+      margin: 0 auto 32px;
+      padding: 0 16px;
+    }
+
+    .analysis-card,
+    .demo-note-card,
+    .pipeline-card {
+      margin-top: 14px;
+      padding: 16px;
+      background: var(--panel);
+    }
+
+    .demo-note-title {
+      margin: 0 0 10px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .analysis-box {
+      margin-top: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      background: var(--panel-3);
+      padding: 12px;
+      min-height: 122px;
+      max-height: 240px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      color: #d4dcea;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .pipeline-card {
+      padding: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at top left, rgba(35, 208, 122, 0.13), transparent 28%),
+        linear-gradient(180deg, #121822 0%, #0f141d 100%);
+    }
+
+    .pipeline-header {
+      padding: 18px 18px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .pipeline-title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .pipeline-kicker {
+      display: inline-flex;
+      width: fit-content;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(35, 208, 122, 0.12);
+      color: #86efb1;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+    }
+
+    .pipeline-title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .pipeline-subtitle {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 720px;
+    }
+
+    .pipeline-stage-chip {
+      padding: 8px 12px;
+      border: 1px solid rgba(134, 239, 177, 0.22);
+      border-radius: 999px;
+      background: rgba(134, 239, 177, 0.08);
+      color: #cdfadf;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .pipeline-body {
+      padding: 16px 18px 18px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.42fr) minmax(300px, 0.92fr);
+      gap: 16px;
+    }
+
+    .pipeline-left {
+      display: grid;
+      gap: 16px;
+    }
+
+    .pipeline-journey {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .journey-step {
+      min-height: 176px;
+      padding: 14px 12px 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.03);
+      transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .journey-step.active {
+      border-color: rgba(35, 208, 122, 0.5);
+      transform: translateY(-2px);
+      box-shadow: 0 0 0 1px rgba(35, 208, 122, 0.18) inset;
+    }
+
+    .journey-step.done {
+      border-color: rgba(134, 239, 177, 0.26);
+    }
+
+    .journey-no {
+      color: #86efb1;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .journey-name {
+      margin: 8px 0 5px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .journey-desc {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .journey-mini {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .mini-pill {
+      padding: 5px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #e1e8f1;
+      font-size: 11px;
+      opacity: 0.4;
+      transform: translateY(8px);
+      transition: opacity 0.3s ease, transform 0.3s ease, background 0.3s ease;
+    }
+
+    .mini-pill.show {
+      opacity: 1;
+      transform: translateY(0);
+      background: rgba(134, 239, 177, 0.14);
+    }
+
+    .pipeline-arena {
+      --stream-top-gap: 122px;
+      position: relative;
+      min-height: 420px;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
+        #0b1119;
+      overflow: hidden;
+    }
+
+    .pipeline-stream {
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      top: 20px;
+      height: 78px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .stream-rail,
+    .stream-progress {
+      position: absolute;
+      left: 34px;
+      right: 34px;
+      top: 18px;
+      height: 2px;
+      border-radius: 999px;
+    }
+
+    .stream-rail {
+      background: linear-gradient(90deg, rgba(116, 130, 153, 0.18), rgba(116, 130, 153, 0.36), rgba(116, 130, 153, 0.18));
+    }
+
+    .stream-progress {
+      right: auto;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(35, 208, 122, 0.18), rgba(35, 208, 122, 0.95), rgba(134, 239, 177, 0.88));
+      box-shadow: 0 0 18px rgba(35, 208, 122, 0.32);
+      transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .stream-pulse {
+      position: absolute;
+      left: 24px;
+      top: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 1px solid rgba(195, 255, 223, 0.82);
+      background: radial-gradient(circle at 35% 35%, #effff5, #8cffb6 48%, rgba(35, 208, 122, 0.26) 100%);
+      box-shadow: 0 0 0 8px rgba(35, 208, 122, 0.08), 0 0 24px rgba(35, 208, 122, 0.42);
+      transition: left 0.8s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+      z-index: 1;
+    }
+
+    .stream-pulse::after {
+      content: "";
+      position: absolute;
+      inset: -8px;
+      border-radius: inherit;
+      border: 1px solid rgba(134, 239, 177, 0.22);
+      animation: pulse-ring 2.2s ease-out infinite;
+    }
+
+    .stream-node {
+      position: relative;
+      width: calc(25% - 18px);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      opacity: 0.72;
+      transform: translateY(4px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    .stream-node.active,
+    .stream-node.done {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .stream-node.done .stream-node-dot {
+      border-color: rgba(134, 239, 177, 0.6);
+      background: rgba(35, 208, 122, 0.2);
+      color: #eafff2;
+    }
+
+    .stream-node.active .stream-node-dot {
+      border-color: rgba(195, 255, 223, 0.85);
+      background: rgba(35, 208, 122, 0.32);
+      box-shadow: 0 0 18px rgba(35, 208, 122, 0.28);
+      color: #f6fff9;
+    }
+
+    .stream-node-dot {
+      width: 24px;
+      height: 24px;
+      flex: 0 0 24px;
+      border-radius: 50%;
+      border: 1px solid rgba(148, 163, 184, 0.36);
+      background: rgba(255, 255, 255, 0.05);
+      color: #8fa0b6;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 22px;
+      text-align: center;
+    }
+
+    .stream-node-copy {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .stream-node-copy strong {
+      font-size: 12px;
+      color: #e9eff8;
+    }
+
+    .stream-node-copy span {
+      font-size: 11px;
+      line-height: 1.45;
+      color: #8291a6;
+    }
+
+    .pipeline-grid {
+      position: absolute;
+      inset: 0;
+      opacity: 0.18;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 22px 22px;
+      pointer-events: none;
+    }
+
+    .pipeline-lane {
+      position: absolute;
+      top: var(--stream-top-gap);
+      bottom: 16px;
+      width: calc(25% - 14px);
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      pointer-events: none;
+    }
+
+    .pipeline-lane.capture {
+      left: 16px;
+    }
+
+    .pipeline-lane.preference {
+      left: calc(25% + 6px);
+    }
+
+    .pipeline-lane.ranking {
+      left: calc(50% - 4px);
+    }
+
+    .pipeline-lane.redraw {
+      left: calc(75% - 14px);
+    }
+
+    .arena-label {
+      position: absolute;
+      top: calc(var(--stream-top-gap) - 24px);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #748299;
+    }
+
+    .arena-label.capture {
+      left: 28px;
+    }
+
+    .arena-label.preference {
+      left: calc(25% + 18px);
+    }
+
+    .arena-label.ranking {
+      left: calc(50% + 8px);
+    }
+
+    .arena-label.redraw {
+      left: calc(75% - 2px);
+    }
+
+    .floating-card {
+      position: absolute;
+      width: calc(25% - 24px);
+      min-width: 100px;
+      max-width: 118px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #111723;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+      opacity: 0;
+      transform: translateY(10px) scale(0.94);
+      transition: opacity 0.55s ease, transform 0.55s ease, left 0.9s ease, top 0.9s ease, border-color 0.35s ease;
+    }
+
+    .floating-card.show {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .floating-card.highlight {
+      border-color: rgba(35, 208, 122, 0.54);
+    }
+
+    .floating-card.dimmed {
+      opacity: 0.38;
+      transform: scale(0.92);
+    }
+
+    .floating-thumb {
+      width: 100%;
+      height: 72px;
+      object-fit: cover;
+      display: block;
+      background: linear-gradient(135deg, #213147, #111723);
+    }
+
+    .floating-body {
+      padding: 8px 9px 10px;
+    }
+
+    .floating-title {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .floating-meta {
+      margin-top: 5px;
+      font-size: 11px;
+      color: #91a0b7;
+      line-height: 1.5;
+    }
+
+    .pipeline-right {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .skip-frame-strip {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
+
+    .skip-frame-card {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      min-width: 0;
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.45s ease, transform 0.45s ease, border-color 0.3s ease;
+    }
+
+    .skip-frame-card.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .skip-frame-card.highlight {
+      border-color: rgba(35, 208, 122, 0.54);
+    }
+
+    .skip-frame-card.dimmed {
+      opacity: 0.46;
+    }
+
+    .skip-frame-thumb {
+      width: 72px;
+      height: 40px;
+      flex-shrink: 0;
+      object-fit: cover;
+      display: block;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #213147, #111723);
+      margin-right: 14px;
+    }
+
+    .skip-frame-body {
+      flex: 1;
+      min-width: 0;
+      padding-top: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .skip-frame-title {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .skip-frame-meta {
+      margin-top: 4px;
+      font-size: 11px;
+      color: #91a0b7;
+      line-height: 1.5;
+    }
+
+    .pref-hub,
+    .redraw-panel {
+      position: absolute;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      background: rgba(14, 19, 28, 0.97);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+    }
+
+    .pref-hub.show,
+    .redraw-panel.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .pref-hub {
+      left: calc(25% + 18px);
+      top: calc(var(--stream-top-gap) + 28px);
+      width: calc(25% - 30px);
+      height: 236px;
+      background: rgba(18, 28, 22, 0.88);
+      border-color: rgba(134, 239, 177, 0.16);
+    }
+
+    .pref-title {
+      padding: 14px 14px 0;
+      color: #b6f2cb;
+      font-size: 12px;
+    }
+
+    .pref-list {
+      padding: 12px 14px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .pref-row {
+      display: grid;
+      grid-template-columns: 72px 1fr 36px;
+      gap: 8px;
+      align-items: center;
+      color: #dce7f4;
+      font-size: 11px;
+      opacity: 0.4;
+      transform: translateX(-10px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    .pref-row.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .pref-bar {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .pref-bar > span {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+      transition: width 0.72s ease;
+    }
+
+    .ranking-board {
+      position: absolute;
+      left: calc(50% + 8px);
+      top: calc(var(--stream-top-gap) + 28px);
+      width: calc(25% - 24px);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .ranking-item {
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(13, 19, 28, 0.96);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.4s ease, transform 0.4s ease, border-color 0.4s ease;
+    }
+
+    .ranking-item.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .ranking-item.top {
+      border-color: rgba(134, 239, 177, 0.42);
+      box-shadow: 0 10px 22px rgba(7, 23, 12, 0.25);
+    }
+
+    .ranking-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .ranking-desc {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .redraw-panel {
+      left: calc(75% - 2px);
+      top: calc(var(--stream-top-gap) + 28px);
+      width: calc(25% - 14px);
+      padding: 12px;
+    }
+
+    .redraw-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .redraw-badge {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #b7c4d7;
+      font-size: 10px;
+    }
+
+    .redraw-compare {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .redraw-card {
+      min-height: 80px;
+      padding: 10px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+    }
+
+    .redraw-label {
+      font-size: 10px;
+      color: #8c99ae;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .redraw-style {
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .redraw-copy {
+      margin-top: 8px;
+      font-size: 11px;
+      line-height: 1.6;
+      color: #b8c6d7;
+    }
+
+    .pipeline-log {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .pipeline-log-item {
+      padding: 11px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: rgba(255, 255, 255, 0.03);
+      color: #dae2ee;
+      font-size: 12px;
+      line-height: 1.65;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.3s ease, transform 0.3s ease, border-color 0.35s ease;
+    }
+
+    .pipeline-log-item.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .pipeline-log-item.active {
+      border-color: rgba(35, 208, 122, 0.28);
+      background: rgba(35, 208, 122, 0.07);
+    }
+
+    @keyframes pulse-ring {
+      0% {
+        opacity: 0.75;
+        transform: scale(0.78);
+      }
+
+      70% {
+        opacity: 0;
+        transform: scale(1.55);
+      }
+
+      100% {
+        opacity: 0;
+        transform: scale(1.55);
+      }
+    }
+
+    .pipeline-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary-card {
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .summary-label {
+      color: #8c99ae;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .summary-value {
+      margin-top: 8px;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .summary-text {
+      margin-top: 6px;
+      font-size: 12px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .missing {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1060px) {
+      .layout,
+      .pipeline-body {
+        grid-template-columns: 1fr;
+      }
+
+      .pipeline-journey {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 840px) {
+      .pipeline-journey,
+      .pipeline-summary,
+      .skip-frame-strip,
+      .redraw-compare {
+        grid-template-columns: 1fr;
+      }
+
+      .pipeline-arena {
+        --stream-top-gap: 124px;
+        min-height: 860px;
+      }
+
+      .pipeline-stream {
+        left: 18px;
+        right: 18px;
+        height: 88px;
+        gap: 8px;
+      }
+
+      .stream-rail,
+      .stream-progress {
+        left: 28px;
+        right: 28px;
+      }
+
+      .stream-node {
+        width: calc(25% - 10px);
+      }
+
+      .stream-node-copy strong {
+        font-size: 11px;
+      }
+
+      .stream-node-copy span {
+        font-size: 10px;
+      }
+
+      .pipeline-lane {
+        left: 16px !important;
+        width: calc(100% - 32px);
+        height: calc(25% - 14px);
+        top: auto;
+        bottom: auto;
+      }
+
+      .pipeline-lane.capture {
+        top: 16px;
+      }
+
+      .pipeline-lane.preference {
+        top: calc(25% + 6px);
+      }
+
+      .pipeline-lane.ranking {
+        top: calc(50% - 4px);
+      }
+
+      .pipeline-lane.redraw {
+        top: calc(75% - 14px);
+      }
+
+      .arena-label.capture,
+      .arena-label.preference,
+      .arena-label.ranking,
+      .arena-label.redraw {
+        left: 28px;
+      }
+
+      .arena-label.preference {
+        top: calc(25% + 18px);
+      }
+
+      .arena-label.ranking {
+        top: calc(50% + 8px);
+      }
+
+      .arena-label.redraw {
+        top: calc(75% - 2px);
+      }
+
+      .pref-hub,
+      .ranking-board,
+      .redraw-panel {
+        left: 28px;
+        width: calc(100% - 56px);
+      }
+
+      .pref-hub {
+        top: calc(25% + 70px);
+      }
+
+      .ranking-board {
+        top: calc(50% + 70px);
+      }
+
+      .redraw-panel {
+        top: calc(75% + 60px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">腾讯视频</div>
+    <div class="topbar-right">广告跳过信号驱动的风格理解 Demo</div>
+  </header>
+
+  <main class="layout">
+    <section class="player-card">
+      <div class="player-wrap" id="playerWrap">
+        <video id="videoPlayer" playsinline></video>
+        <div class="badge" id="videoBadge">正在准备...</div>
+        <div class="season-overlay" id="seasonOverlay">第一集</div>
+      </div>
+      <div class="meta">
+        <h1 class="title">《剑来》</h1>
+        <p class="subtitle">正式播放前，系统先用短广告试探用户是否接受当前广告画风。</p>
+      </div>
+    </section>
+
+    <aside class="right">
+      <div class="right-header">
+        <h2 class="right-title">正在热播</h2>
+        <span class="state" id="playState">广告准备中</span>
+      </div>
+      <ul class="playlist" id="playlist"></ul>
+      <div class="tips" id="tipsBox">
+        说明：部分浏览器首次自动播放会被拦截，如未自动播放，请先点击视频区域。
+      </div>
+    </aside>
+  </main>
+
+  <div class="compare-label">对比方案：原始广告顺序播放。用户最多可跳过 2 次，我们记录跳过时的画面并做偏好分析。</div>
+
+  <section class="layout compare-section">
+    <section class="player-card">
+      <div class="player-wrap" id="compareWrap">
+        <video id="comparePlayer" playsinline></video>
+        <div class="badge" id="compareBadge">会员可跳过全部广告 · 72S</div>
+        <button class="center-start-btn" id="centerStartCompareBtn" type="button">手动开始对比方案</button>
+        <button class="skip-btn" id="skipBtn" type="button">您还可以跳过 2 个广告</button>
+        <div class="season-overlay" id="compareOverlay">第一集</div>
+      </div>
+      <div class="meta">
+        <h1 class="title">《剑来》</h1>
+        <p class="subtitle">对比方案：按照 1-5 顺序连续播广告，观察跳过瞬间对应的画风和表达方式。</p>
+      </div>
+    </section>
+
+    <aside class="right">
+      <div class="right-header">
+        <h2 class="right-title">AI分析改广告标签</h2>
+        <span class="state" id="comparePlayState">等待开始</span>
+      </div>
+      <ul class="playlist" id="comparePlaylist"></ul>
+      <div class="tips" id="compareTipsBox">
+        原始方案结束后会自动进入分析；你也可以手动开始或手动点“分析用户广告偏好”再次触发。
+        <div id="skipLogText" style="margin-top: 8px;">跳过记录：暂无</div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="analysis-section" id="analysisSection">
+    <div class="analysis-card">
+      <h3 class="demo-note-title">用户跳过画面分析</h3>
+      <div class="analysis-box" id="visionAnalysisBox">视觉模型输出会显示在这里，用于下一步AI进一步解释用户为什么在某个广告节点产生“想跳过”的反应。</div>
+    </div>
+
+    <div class="analysis-card">
+      <h3 class="demo-note-title">用户广告偏好分析</h3>
+      <button class="action-btn" id="analyzeBtn" type="button">分析用户广告偏好（流式）</button>
+      <div class="analysis-box" id="analysisBox">偏好分析为标准化的json格式，用于后续的用户喜好推送以及AI风格化重绘。</div>
+    </div>
+
+    <div class="pipeline-card">
+      <div class="pipeline-header">
+        <div class="pipeline-title-wrap">
+          <span class="pipeline-kicker">PERSONALIZATION LOOP</span>
+          <h3 class="pipeline-title">从“跳过”到“理解”：智能重绘策略链路</h3>
+          <p class="pipeline-subtitle">系统将鼠标点击“跳过”的反馈解析为四个阶段，让你更直观地看到内容推荐与画面重绘是如何基于偏好发生改变的。</p>
+        </div>
+        <div class="pipeline-stage-chip" id="pipelineStageChip">等待跳过行为触发</div>
+      </div>
+
+      <div class="pipeline-body">
+        <div class="pipeline-left">
+          <div class="pipeline-journey">
+            <div class="journey-step" id="journeyStep1">
+              <div class="journey-no">Step 01</div>
+              <h4 class="journey-name">特征采样</h4>
+              <p class="journey-desc">截取跳过前后的核心画面，将其转化为模型可分析的视觉源文件。</p>
+              <div class="journey-mini" id="journeyMini1"></div>
+            </div>
+            <div class="journey-step" id="journeyStep2">
+              <div class="journey-no">Step 02</div>
+              <h4 class="journey-name">偏好抽取</h4>
+              <p class="journey-desc">识别原画面的风格、节奏及销售强度，量化你反感与偏好的因子。</p>
+              <div class="journey-mini" id="journeyMini2"></div>
+            </div>
+            <div class="journey-step" id="journeyStep3">
+              <div class="journey-no">Step 03</div>
+              <h4 class="journey-name">商品优选</h4>
+              <p class="journey-desc">在库中寻找匹配你当前接受度的广告，决定最恰当的商品展现顺序。</p>
+              <div class="journey-mini" id="journeyMini3"></div>
+            </div>
+            <div class="journey-step" id="journeyStep4">
+              <div class="journey-no">Step 04</div>
+              <h4 class="journey-name">实时重绘</h4>
+              <p class="journey-desc">针对即将播放的同类商品，生成更契合你偏好的视觉设计版本。</p>
+              <div class="journey-mini" id="journeyMini4"></div>
+            </div>
+          </div>
+
+          <div class="pipeline-arena" id="pipelineArena">
+            <div class="pipeline-grid"></div>
+            <div class="pipeline-stream" id="pipelineStream">
+              <div class="stream-rail"></div>
+              <div class="stream-progress" id="streamProgress"></div>
+              <div class="stream-pulse" id="streamPulse"></div>
+              <div class="stream-node" id="streamNode1">
+                <div class="stream-node-dot">01</div>
+                <div class="stream-node-copy">
+                  <strong>特征采样</strong>
+                  <span>截取跳过关键帧</span>
+                </div>
+              </div>
+              <div class="stream-node" id="streamNode2">
+                <div class="stream-node-dot">02</div>
+                <div class="stream-node-copy">
+                  <strong>偏好抽取</strong>
+                  <span>构建画面喜好特征</span>
+                </div>
+              </div>
+              <div class="stream-node" id="streamNode3">
+                <div class="stream-node-dot">03</div>
+                <div class="stream-node-copy">
+                  <strong>商品优选</strong>
+                  <span>匹配最佳推荐</span>
+                </div>
+              </div>
+              <div class="stream-node" id="streamNode4">
+                <div class="stream-node-dot">04</div>
+                <div class="stream-node-copy">
+                  <strong>实时重绘</strong>
+                  <span>生成用户专属风格</span>
+                </div>
+              </div>
+            </div>
+            <div class="pipeline-lane capture"></div>
+            <div class="pipeline-lane preference"></div>
+            <div class="pipeline-lane ranking"></div>
+            <div class="pipeline-lane redraw"></div>
+            <div class="arena-label capture">1. Sampling</div>
+            <div class="arena-label preference">2. Feature</div>
+            <div class="arena-label ranking">3. Ranking</div>
+            <div class="arena-label redraw">4. Redraw</div>
+
+            <div class="pref-hub" id="prefHub">
+              <div class="pref-title">用户偏好画像</div>
+              <div class="pref-list" id="prefList"></div>
+            </div>
+
+            <div class="ranking-board" id="rankingBoard"></div>
+
+            <div class="redraw-panel" id="redrawPanel">
+              <div class="redraw-head">
+                <span>实时计算生成新广告</span>
+                <span class="redraw-badge" id="redrawBadge">等待生成中</span>
+              </div>
+              <div class="redraw-compare">
+                <div class="redraw-card">
+                  <div class="redraw-label">跳过前的旧策略</div>
+                  <div class="redraw-style" id="redrawBeforeStyle">强引导、快切镜头</div>
+                  <div class="redraw-copy" id="redrawBeforeCopy">原广告过于强调视觉刺激和促销信息，易引起视觉疲劳。</div>
+                </div>
+                <div class="redraw-card">
+                  <div class="redraw-label">重绘后的新策略</div>
+                  <div class="redraw-style" id="redrawAfterStyle">特征分析中...</div>
+                  <div class="redraw-copy" id="redrawAfterCopy">AI 将根据当前抓取的模型特征，生成最符合本偏好的专属创意。</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pipeline-summary">
+            <div class="summary-card">
+              <div class="summary-label">Sample Frames</div>
+              <div class="summary-value" id="summaryFrames">0</div>
+              <div class="summary-text">累计进入分析池的跳过画面数。</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Preference Signal</div>
+              <div class="summary-value" id="summarySignal">等待中</div>
+              <div class="summary-text">当前归纳出的主偏好方向。</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Best Next Action</div>
+              <div class="summary-value" id="summaryAction">等待分析</div>
+              <div class="summary-text">推荐商品和广告创意的联合输出结果。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pipeline-right">
+          <div class="skip-frame-strip" id="skipFrameStrip"></div>
+          <div class="pipeline-log" id="pipelineLog"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const adSources = ["../ads/5.mp4", "../ads/2.mp4", "../ads/3.mp4"];
+    const compareSources = ["../ads/1.mp4", "../ads/2.mp4", "../ads/3.mp4", "../ads/4.mp4", "../ads/5.mp4"];
+    const countdownTotal = 72;
+
+    const adCatalog = {
+      1: { name: "拼多多", product: "电商促销", tone: "强促销", baseStyle: "红黄高饱和", preferredStyle: "低压信息流 + 清晰利益点" },
+      2: { name: "可口可乐", product: "饮料", tone: "年轻热闹", baseStyle: "人群欢呼", preferredStyle: "清爽生活感 + 品牌点到即止" },
+      3: { name: "潘婷", product: "护发", tone: "功效展示", baseStyle: "棚拍质感", preferredStyle: "真实人物 + 柔和高光" },
+      4: { name: "LOWICE", product: "番茄酱", tone: "食欲刺激", baseStyle: "快切大字", preferredStyle: "食材特写 + 慢镜头食欲感" },
+      5: { name: "海蓝之谜", product: "护肤", tone: "高端修护", baseStyle: "深海神秘", preferredStyle: "极简高级 + 成分信任感" }
+    };
+
+    const preferenceBlueprint = [
+      { key: "premium", label: "高级质感", value: 86 },
+      { key: "soft", label: "柔和色调", value: 78 },
+      { key: "human", label: "真实人物", value: 72 },
+      { key: "calm", label: "慢镜头叙事", value: 68 }
+    ];
+
+    const rankingBlueprint = [
+      { name: "海蓝之谜修护精华", reason: "与当前用户更偏好的高级感、低干扰画风最贴近。", score: 92 },
+      { name: "潘婷修护系列", reason: "功效型商品适合切换到更真实、更柔和的表达。", score: 84 },
+      { name: "可口可乐轻场景版", reason: "保留品牌热度，但降低喧闹程度更容易被接受。", score: 71 }
+    ];
+
+    const player = document.getElementById("videoPlayer");
+    const playerWrap = document.getElementById("playerWrap");
+    const badge = document.getElementById("videoBadge");
+    const seasonOverlay = document.getElementById("seasonOverlay");
+    const playState = document.getElementById("playState");
+    const playlist = document.getElementById("playlist");
+    const tipsBox = document.getElementById("tipsBox");
+
+    const comparePlayer = document.getElementById("comparePlayer");
+    const compareWrap = document.getElementById("compareWrap");
+    const compareBadge = document.getElementById("compareBadge");
+    const compareOverlay = document.getElementById("compareOverlay");
+    const comparePlayState = document.getElementById("comparePlayState");
+    const comparePlaylist = document.getElementById("comparePlaylist");
+    const skipBtn = document.getElementById("skipBtn");
+    const centerStartCompareBtn = document.getElementById("centerStartCompareBtn");
+    const skipLogText = document.getElementById("skipLogText");
+
+    const visionAnalysisBox = document.getElementById("visionAnalysisBox");
+    const analysisBox = document.getElementById("analysisBox");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+
+    const pipelineArena = document.getElementById("pipelineArena");
+    const pipelineStream = document.getElementById("pipelineStream");
+    const pipelineStageChip = document.getElementById("pipelineStageChip");
+    const streamProgress = document.getElementById("streamProgress");
+    const streamPulse = document.getElementById("streamPulse");
+    const prefHub = document.getElementById("prefHub");
+    const prefList = document.getElementById("prefList");
+    const rankingBoard = document.getElementById("rankingBoard");
+    const redrawPanel = document.getElementById("redrawPanel");
+    const redrawBadge = document.getElementById("redrawBadge");
+    const redrawBeforeStyle = document.getElementById("redrawBeforeStyle");
+    const redrawBeforeCopy = document.getElementById("redrawBeforeCopy");
+    const redrawAfterStyle = document.getElementById("redrawAfterStyle");
+    const redrawAfterCopy = document.getElementById("redrawAfterCopy");
+    const skipFrameStrip = document.getElementById("skipFrameStrip");
+    const pipelineLog = document.getElementById("pipelineLog");
+    const summaryFrames = document.getElementById("summaryFrames");
+    const summarySignal = document.getElementById("summarySignal");
+    const summaryAction = document.getElementById("summaryAction");
+    const journeySteps = [
+      document.getElementById("journeyStep1"),
+      document.getElementById("journeyStep2"),
+      document.getElementById("journeyStep3"),
+      document.getElementById("journeyStep4")
+    ];
+    const journeyMiniHolders = [
+      document.getElementById("journeyMini1"),
+      document.getElementById("journeyMini2"),
+      document.getElementById("journeyMini3"),
+      document.getElementById("journeyMini4")
+    ];
+    const streamNodes = [
+      document.getElementById("streamNode1"),
+      document.getElementById("streamNode2"),
+      document.getElementById("streamNode3"),
+      document.getElementById("streamNode4")
+    ];
+
+    let remainingSeconds = countdownTotal;
+    let countdownTimer = null;
+    let currentIndex = 0;
+    let adFinished = false;
+
+    let compareIndex = 0;
+    let compareElapsed = 0;
+    let compareTimer = null;
+    let compareStarted = false;
+    let compareFinished = false;
+    let skipRemain = 2;
+    let autoScrolledToAnalysis = false;
+    let autoAnalysisTriggered = false;
+    let frameCaptureTimer = null;
+    let pipelineRunToken = 0;
+    let currentPipelineStage = -1;
+    let pipelineStageComplete = false;
+
+    const skipClickRecords = [];
+    const skipFrameRecords = [];
+    const frameCache = {};
+
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    function safeAdMeta(adNo) {
+      return adCatalog[adNo] || { name: `广告${adNo}`, product: "商品", tone: "待补充", baseStyle: "默认风格", preferredStyle: "偏好风格" };
+    }
+
+    function renderPlaylist() {
+      playlist.innerHTML = adSources.map((src, index) => {
+        const meta = safeAdMeta(index === 0 ? 5 : index + 1);
+        return `
+          <li class="item ${index === currentIndex ? "active" : ""}">
+            <p class="item-name">${meta.name}</p>
+            <p class="item-desc">主播放试探广告 ${index + 1} · ${meta.baseStyle}</p>
+          </li>
+        `;
+      }).join("");
+    }
+
+    function renderComparePlaylist() {
+      comparePlaylist.innerHTML = compareSources.map((src, index) => {
+        const meta = safeAdMeta(index + 1);
+        return `
+          <li class="item ${index === compareIndex && compareStarted && !compareFinished ? "active" : ""}">
+            <p class="item-name">${meta.name}</p>
+            <p class="item-desc">${meta.product} · ${meta.baseStyle} · ${meta.tone}</p>
+          </li>
+        `;
+      }).join("");
+    }
+
+    function formatCountdown() {
+      return remainingSeconds > 0 ? `会员可跳过全部广告 · ${remainingSeconds}S` : "第一集";
+    }
+
+    function updateBadge() {
+      badge.textContent = formatCountdown();
+    }
+
+    function updateCompareBadge() {
+      const left = Math.max(0, countdownTotal - compareElapsed);
+      compareBadge.textContent = left > 0 ? `会员可跳过全部广告 · ${left}S` : "第一集";
+    }
+
+    function updateSkipButton() {
+      skipBtn.textContent = `您还可以跳过 ${skipRemain} 个广告`;
+      skipBtn.disabled = skipRemain <= 0 || !compareStarted || compareFinished;
+    }
+
+    function updateSkipLogText() {
+      if (!skipClickRecords.length) {
+        skipLogText.textContent = "跳过记录：暂无";
+        return;
+      }
+      const logs = skipClickRecords.map((record, index) => `第${index + 1}次：广告${record.adNo} 的第 ${record.second}s`).join("；");
+      skipLogText.textContent = `跳过记录：${logs}`;
+    }
+
+    function startCountdown() {
+      clearInterval(countdownTimer);
+      remainingSeconds = countdownTotal;
+      updateBadge();
+      countdownTimer = setInterval(() => {
+        remainingSeconds -= 1;
+        if (remainingSeconds <= 0) {
+          remainingSeconds = 0;
+          updateBadge();
+          clearInterval(countdownTimer);
+          countdownTimer = null;
+          showAfterAdScreen();
+          return;
+        }
+        updateBadge();
+      }, 1000);
+    }
+
+    function showAfterAdScreen() {
+      adFinished = true;
+      player.pause();
+      player.removeAttribute("src");
+      player.load();
+      playerWrap.style.background = "#000";
+      seasonOverlay.classList.add("show");
+      playState.textContent = "正片已开始";
+      startComparePlan();
+    }
+
+    function switchTo(index, autoplay = false) {
+      if (adFinished) return;
+      currentIndex = index;
+      player.src = adSources[currentIndex];
+      playState.textContent = `试探广告 ${currentIndex + 1}`;
+      renderPlaylist();
+      if (autoplay) {
+        const playPromise = player.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+          playPromise.catch(() => {
+            playState.textContent = "等待用户手动播放";
+          });
+        }
+      }
+    }
+
+    function nextVideo() {
+      if (adFinished) return;
+      const next = (currentIndex + 1) % adSources.length;
+      switchTo(next, true);
+    }
+
+    function stopCompareTimer() {
+      if (compareTimer) {
+        clearInterval(compareTimer);
+        compareTimer = null;
+      }
+    }
+
+    function finishCompareAds() {
+      compareFinished = true;
+      stopCompareTimer();
+      if (frameCaptureTimer) {
+        clearInterval(frameCaptureTimer);
+        frameCaptureTimer = null;
+      }
+      comparePlayer.pause();
+      comparePlayer.removeAttribute("src");
+      comparePlayer.load();
+      compareWrap.style.background = "#000";
+      compareOverlay.classList.add("show");
+      comparePlayState.textContent = "原始方案播放完成";
+      renderComparePlaylist();
+      updateCompareBadge();
+      updateSkipButton();
+    }
+
+    function playCompareSource(index, autoplay = true) {
+      if (compareFinished) return;
+      compareIndex = index;
+      const meta = safeAdMeta(compareIndex + 1);
+      comparePlayer.src = compareSources[compareIndex];
+      comparePlayState.textContent = `广告 ${compareIndex + 1} · ${meta.name}`;
+      renderComparePlaylist();
+      if (autoplay) {
+        const playPromise = comparePlayer.play();
+        if (playPromise && typeof playPromise.catch === "function") {
+          playPromise.catch(() => {});
+        }
+      }
+    }
+
+    function startComparePlan() {
+      if (compareStarted) return;
+      compareStarted = true;
+      compareElapsed = 0;
+      compareFinished = false;
+      compareOverlay.classList.remove("show");
+      centerStartCompareBtn.classList.add("hidden");
+      updateCompareBadge();
+      updateSkipButton();
+      stopCompareTimer();
+      compareTimer = setInterval(() => {
+        compareElapsed += 1;
+        updateCompareBadge();
+        if (compareElapsed >= countdownTotal) {
+          finishCompareAds();
+        }
+      }, 1000);
+      playCompareSource(0, true);
+      startFrameCaptureLoop();
+    }
+
+    function captureCurrentFrameDataUrl() {
+      try {
+        if (!comparePlayer.videoWidth || !comparePlayer.videoHeight) return null;
+        const maxWidth = 480;
+        const targetWidth = Math.min(maxWidth, comparePlayer.videoWidth);
+        const targetHeight = Math.max(1, Math.round((targetWidth * comparePlayer.videoHeight) / comparePlayer.videoWidth));
+        const canvas = document.createElement("canvas");
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(comparePlayer, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL("image/jpeg", 0.55);
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function startFrameCaptureLoop() {
+      if (frameCaptureTimer) clearInterval(frameCaptureTimer);
+      frameCaptureTimer = setInterval(() => {
+        if (!compareStarted || compareFinished) return;
+        const adNo = compareIndex + 1;
+        const second = Math.max(0, Math.floor(comparePlayer.currentTime || 0));
+        const frame = captureCurrentFrameDataUrl();
+        if (!frame) return;
+        if (!frameCache[adNo]) frameCache[adNo] = {};
+        frameCache[adNo][second] = frame;
+      }, 300);
+    }
+
+    async function streamAnalyzeRequest(payload) {
+      const candidates = [
+        "/api/analyze-user-stream",
+        "http://localhost:5173/api/analyze-user-stream",
+        "http://localhost:5174/api/analyze-user-stream"
+      ];
+      for (const url of candidates) {
+        try {
+          const resp = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          if (!resp.ok) {
+            const text = await resp.text();
+            throw new Error(text || `HTTP ${resp.status}`);
+          }
+          const reader = resp.body.getReader();
+          const decoder = new TextDecoder("utf-8");
+          let buffer = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const events = buffer.split(/\r?\n\r?\n/);
+            buffer = events.pop() || "";
+
+            for (const eventBlock of events) {
+              const dataLines = eventBlock
+                .split(/\r?\n/)
+                .filter((line) => line.startsWith("data:"))
+                .map((line) => line.slice(5).trim())
+                .filter(Boolean);
+
+              for (const dataLine of dataLines) {
+                if (dataLine === "[DONE]") continue;
+
+                let chunkText = "";
+                try {
+                  const chunk = JSON.parse(dataLine);
+                  chunkText = chunk?.choices?.[0]?.delta?.content
+                    || chunk?.choices?.[0]?.message?.content
+                    || chunk?.error
+                    || "";
+                } catch (_) {
+                  chunkText = dataLine;
+                }
+
+                if (chunkText) {
+                  analysisBox.textContent += chunkText;
+                  analysisBox.scrollTop = analysisBox.scrollHeight;
+                }
+              }
+            }
+          }
+          return;
+        } catch (_) {
+          // try next
+        }
+      }
+      throw new Error("流式偏好分析接口请求失败");
+    }
+
+    async function postVisionAnalyze(items) {
+      const candidates = [
+        "/api/analyze-skip-vision-stream",
+        "http://localhost:5173/api/analyze-skip-vision-stream",
+        "http://localhost:5174/api/analyze-skip-vision-stream"
+      ];
+
+      if (!Array.isArray(items) || !items.length) return [];
+
+      let lastErr = null;
+      for (const url of candidates) {
+        try {
+          const resp = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ items })
+          });
+          if (!resp.ok) {
+            const text = await resp.text();
+            throw new Error(text || `HTTP ${resp.status}`);
+          }
+
+          const reader = resp.body.getReader();
+          const decoder = new TextDecoder("utf-8");
+          let buffer = "";
+
+          const results = [];
+          let currentIndex = 0;
+          let currentInsight = "";
+
+          const printHeading = (index) => {
+            const item = items[index];
+            if (!item) return;
+            visionAnalysisBox.textContent += `\n【广告${item.adNo} 第${item.second}秒】\n`;
+            visionAnalysisBox.scrollTop = visionAnalysisBox.scrollHeight;
+          };
+
+          printHeading(currentIndex);
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const events = buffer.split(/\r?\n\r?\n/);
+            buffer = events.pop() || "";
+
+            for (const eventBlock of events) {
+              const dataLines = eventBlock
+                .split(/\r?\n/)
+                .filter((line) => line.startsWith("data:"))
+                .map((line) => line.slice(5).trim());
+
+              for (const dataLine of dataLines) {
+                if (!dataLine) continue;
+
+                if (dataLine === "[DONE]") {
+                  const item = items[currentIndex];
+                  results.push({
+                    adNo: item?.adNo ?? null,
+                    second: item?.second ?? null,
+                    insight: currentInsight.trim()
+                  });
+                  currentInsight = "";
+                  currentIndex += 1;
+                  if (currentIndex < items.length) {
+                    visionAnalysisBox.textContent += "\n";
+                    printHeading(currentIndex);
+                  }
+                  continue;
+                }
+
+                let chunkText = "";
+                try {
+                  const chunk = JSON.parse(dataLine);
+                  chunkText = chunk?.choices?.[0]?.delta?.content
+                    || chunk?.choices?.[0]?.message?.content
+                    || chunk?.error
+                    || "";
+                } catch (_) {
+                  chunkText = dataLine;
+                }
+
+                if (chunkText) {
+                  visionAnalysisBox.textContent += chunkText;
+                  visionAnalysisBox.scrollTop = visionAnalysisBox.scrollHeight;
+                  currentInsight += chunkText;
+                }
+              }
+            }
+          }
+
+          return results;
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+
+      throw new Error(lastErr ? lastErr.message : "视觉分析接口不可用");
+    }
+
+    function resetJourneyMini() {
+      journeyMiniHolders.forEach((holder) => {
+        holder.innerHTML = "";
+      });
+    }
+
+    function addJourneyMini(stepIndex, text) {
+      const pill = document.createElement("span");
+      pill.className = "mini-pill";
+      pill.textContent = text;
+      journeyMiniHolders[stepIndex].appendChild(pill);
+      requestAnimationFrame(() => pill.classList.add("show"));
+    }
+
+    function setJourneyState(activeIndex) {
+      journeySteps.forEach((node, index) => {
+        node.classList.toggle("active", index === activeIndex);
+        node.classList.toggle("done", index < activeIndex);
+      });
+      updatePipelineStream(activeIndex);
+    }
+
+    function updatePipelineStream(activeIndex, complete = false) {
+      const stopPercents = [0, 33.333, 66.666, 100];
+      const width = activeIndex < 0 ? 0 : stopPercents[activeIndex];
+      currentPipelineStage = activeIndex;
+      pipelineStageComplete = complete;
+      streamProgress.style.width = `${width}%`;
+      if (activeIndex < 0) {
+        streamPulse.style.left = "23px";
+      } else {
+        const railInset = 34;
+        const pulseRadius = 11;
+        const railWidth = Math.max(0, pipelineStream.clientWidth - railInset * 2);
+        const offset = railInset + (railWidth * width) / 100 - pulseRadius;
+        streamPulse.style.left = `${offset}px`;
+      }
+      streamPulse.style.opacity = activeIndex < 0 ? "0" : "1";
+      streamNodes.forEach((node, index) => {
+        const isDone = index < activeIndex || (complete && index === activeIndex);
+        node.classList.toggle("active", index === activeIndex && !complete);
+        node.classList.toggle("done", isDone);
+      });
+    }
+
+    function resetPipelineVisuals() {
+      pipelineLog.innerHTML = "";
+      skipFrameStrip.innerHTML = "";
+      prefList.innerHTML = "";
+      rankingBoard.innerHTML = "";
+      pipelineArena.querySelectorAll(".floating-card").forEach((node) => node.remove());
+      prefHub.classList.remove("show");
+      redrawPanel.classList.remove("show");
+      redrawBadge.textContent = "待生成";
+      redrawBeforeStyle.textContent = "泛促销、强叫卖";
+      redrawBeforeCopy.textContent = "原广告更强调密集口播和价格刺激，容易在 1-2 秒内触发跳过。";
+      redrawAfterStyle.textContent = "等待偏好归因";
+      redrawAfterCopy.textContent = "系统会根据当前用户群体更喜欢的画风与叙事方式，自动生成新版创意方向。";
+      pipelineStageChip.textContent = "等待跳过行为触发";
+      summaryFrames.textContent = "0";
+      summarySignal.textContent = "等待中";
+      summaryAction.textContent = "等待分析";
+      setJourneyState(-1);
+      resetJourneyMini();
+    }
+
+    function appendPipelineLog(text, active = false) {
+      const item = document.createElement("div");
+      item.className = "pipeline-log-item";
+      item.textContent = text;
+      pipelineLog.appendChild(item);
+      requestAnimationFrame(() => {
+        item.classList.add("show");
+        if (active) item.classList.add("active");
+      });
+    }
+
+    function createFloatingCard(record, index) {
+      const meta = safeAdMeta(record.adNo);
+      const card = document.createElement("div");
+      card.className = "skip-frame-card show";
+      card.innerHTML = `
+        <img class="skip-frame-thumb" src="${record.currFrame || record.prevFrame || ""}" alt="skip-frame-${record.adNo}">
+        <div class="skip-frame-body">
+          <p class="skip-frame-title">${meta.name}</p>
+          <div class="skip-frame-meta">第 ${record.second}秒跳过</div>
+        </div>
+      `;
+      skipFrameStrip.appendChild(card);
+      return card;
+    }
+
+    function renderPreferenceRows(items) {
+      prefList.innerHTML = "";
+      items.forEach((item, index) => {
+        const row = document.createElement("div");
+        row.className = "pref-row";
+        row.innerHTML = `
+          <span>${item.label}</span>
+          <div class="pref-bar"><span></span></div>
+          <strong>${item.value}</strong>
+        `;
+        prefList.appendChild(row);
+        setTimeout(() => {
+          row.classList.add("show");
+          row.querySelector(".pref-bar > span").style.width = `${item.value}%`;
+        }, 120 * index);
+      });
+    }
+
+    function renderRanking(items) {
+      rankingBoard.innerHTML = "";
+      items.forEach((item, index) => {
+        const node = document.createElement("div");
+        node.className = `ranking-item${index === 0 ? " top" : ""}`;
+        node.innerHTML = `
+          <div class="ranking-head">
+            <span>${index + 1}. ${item.name}</span>
+            <strong>${item.score}</strong>
+          </div>
+          <div class="ranking-desc">${item.reason}</div>
+        `;
+        rankingBoard.appendChild(node);
+        setTimeout(() => node.classList.add("show"), 140 * index);
+      });
+    }
+
+    function buildPreferenceInsights(records) {
+      const items = preferenceBlueprint.map((item) => ({ ...item }));
+      const metas = records.map((record) => safeAdMeta(record.adNo));
+      const hasLuxury = metas.some((meta) => meta.name.includes("海蓝之谜"));
+      const hasCare = metas.some((meta) => meta.product.includes("护"));
+      if (hasLuxury) {
+        items[0].value = 92;
+        items[1].value = 82;
+      }
+      if (hasCare) {
+        items[2].value = 79;
+      }
+      return items;
+    }
+
+    function buildRankingInsights(records) {
+      const metas = records.map((record) => safeAdMeta(record.adNo));
+      const likesSkinCare = metas.some((meta) => meta.product.includes("护肤"));
+      if (likesSkinCare) return rankingBlueprint;
+      return [
+        { name: "潘婷修护系列", reason: "用户更接受柔和、真实、低打扰的功效表达。", score: 90 },
+        { name: "海蓝之谜轻故事版", reason: "高级质感仍高匹配，但可降低神秘感门槛。", score: 83 },
+        { name: "LOWICE 食材特写版", reason: "保留食欲点，用慢镜头替代密集促销字幕。", score: 74 }
+      ];
+    }
+
+    async function runPipelineDemo(visionInsights = []) {
+      const token = ++pipelineRunToken;
+      const activeRecords = skipFrameRecords.slice(-Math.max(1, Math.min(3, skipFrameRecords.length)));
+      const prefItems = buildPreferenceInsights(activeRecords);
+      const rankingItems = buildRankingInsights(activeRecords);
+      const mainPref = prefItems.slice().sort((a, b) => b.value - a.value)[0];
+
+      resetPipelineVisuals();
+      summaryFrames.textContent = String(activeRecords.length);
+      pipelineStageChip.textContent = "1/4 采样跳过画面";
+      setJourneyState(0);
+      appendPipelineLog("系统锁定用户点击跳过的前后关键帧，并把这些画面送入反感样本池。", true);
+      addJourneyMini(0, "跳过前 1 秒");
+      addJourneyMini(0, "跳过当秒");
+      const cards = activeRecords.map((record, index) => createFloatingCard(record, index));
+      await wait(700);
+      if (token !== pipelineRunToken) return;
+
+      pipelineStageChip.textContent = "2/4 风格偏好归因";
+      setJourneyState(1);
+      appendPipelineLog("视觉模型开始识别色调、人物关系、镜头密度和促销压迫感。", true);
+      addJourneyMini(1, "色调归因");
+      addJourneyMini(1, "镜头节奏");
+      addJourneyMini(1, "文案压迫感");
+      cards.forEach((card) => card.classList.add("highlight"));
+      prefHub.classList.add("show");
+      renderPreferenceRows(prefItems);
+      summarySignal.textContent = mainPref.label;
+      if (visionInsights.length) {
+        appendPipelineLog(`模型补充结论：${visionInsights[0]}`, false);
+      }
+      await wait(950);
+      if (token !== pipelineRunToken) return;
+
+      pipelineStageChip.textContent = "3/4 商品排序更新";
+      setJourneyState(2);
+      appendPipelineLog("偏好向量进入排序层，系统开始重排更可能被接受的商品与创意组合。", true);
+      addJourneyMini(2, "商品排序");
+      addJourneyMini(2, "创意排序");
+      cards.forEach((card) => card.classList.add("dimmed"));
+      renderRanking(rankingItems);
+      summaryAction.textContent = `${rankingItems[0].name} + 重绘`;
+      await wait(980);
+      if (token !== pipelineRunToken) return;
+
+      pipelineStageChip.textContent = "4/4 广告重绘输出";
+      setJourneyState(3);
+      appendPipelineLog("系统不只推荐商品，也同步给出同类用户更喜欢的广告画风重绘方向。", true);
+      addJourneyMini(3, "重绘画风");
+      addJourneyMini(3, "文案语气");
+      addJourneyMini(3, "镜头结构");
+      const leadMeta = safeAdMeta(activeRecords[0] ? activeRecords[0].adNo : 5);
+      redrawBeforeStyle.textContent = `${leadMeta.baseStyle} / ${leadMeta.tone}`;
+      redrawBeforeCopy.textContent = `当前版本更接近“${leadMeta.name}”原始表达，信息压力较高，容易让同类用户快速跳过。`;
+      redrawAfterStyle.textContent = leadMeta.preferredStyle;
+      redrawAfterCopy.textContent = `面向同类用户，将广告改成“${mainPref.label}”导向的表达：先用视觉氛围建立信任，再自然露出商品卖点。`;
+      redrawBadge.textContent = "已生成建议";
+      redrawPanel.classList.add("show");
+      summarySignal.textContent = `${mainPref.label} ${mainPref.value}`;
+      appendPipelineLog(`最终动作：优先推荐 ${rankingItems[0].name}，并把同类商品广告重绘成 ${leadMeta.preferredStyle}。`, false);
+      journeySteps.forEach((node) => node.classList.add("done"));
+      updatePipelineStream(3, true);
+    }
+
+    async function analyzeUserBySkipBehavior() {
+      visionAnalysisBox.textContent = "正在请求视觉模型分析，请稍候...";
+      analysisBox.textContent = "正在请求大模型分析，请稍候...";
+      try {
+        visionAnalysisBox.textContent = "步骤 A：正在调用视觉模型分析跳过当秒与前一秒画面...\n";
+        let visionInsights = [];
+        if (skipFrameRecords.length) {
+          const visionResults = await postVisionAnalyze(skipFrameRecords);
+          visionInsights = visionResults.map((item) => `广告${item.adNo} 第${item.second}秒：${item.insight}`);
+          visionAnalysisBox.textContent += `\n\n视觉分析完成，共 ${visionInsights.length} 条。\n`;
+        } else {
+          visionAnalysisBox.textContent += "没有可用跳过帧，跳过视觉分析。\n";
+        }
+        analysisBox.textContent = "步骤 B：正在综合跳过记录和视觉结论，流式输出偏好分析...\n";
+        await streamAnalyzeRequest({
+          skipRecords: skipClickRecords,
+          visionInsights
+        });
+        runPipelineDemo(visionInsights);
+      } catch (err) {
+        analysisBox.textContent = `分析失败：${err.message}\n请确认当前页面和分析服务部署在同一个站点下，并且后端接口正在正常运行。`;
+      }
+    }
+
+    player.addEventListener("ended", nextVideo);
+
+    player.addEventListener("error", () => {
+      playState.textContent = "播放失败";
+      tipsBox.innerHTML = `<span class="missing">视频加载失败：</span>请确认广告视频文件存在于 ads 目录。`;
+    });
+
+    comparePlayer.addEventListener("ended", () => {
+      if (!compareStarted || compareFinished) return;
+      const next = (compareIndex + 1) % compareSources.length;
+      playCompareSource(next, true);
+    });
+
+    comparePlayer.addEventListener("error", () => {
+      finishCompareAds();
+    });
+
+    skipBtn.addEventListener("click", () => {
+      if (!compareStarted || compareFinished || skipRemain <= 0) return;
+      const adNo = compareIndex + 1;
+      const second = Math.max(0, Math.floor(comparePlayer.currentTime || 0));
+      skipClickRecords.push({ adNo, second });
+      const prevSecond = Math.max(0, second - 1);
+      const currFrame = (frameCache[adNo] && frameCache[adNo][second]) || captureCurrentFrameDataUrl();
+      const prevFrame = (frameCache[adNo] && frameCache[adNo][prevSecond]) || currFrame || null;
+      skipFrameRecords.push({ adNo, second, prevFrame, currFrame });
+      updateSkipLogText();
+      skipRemain -= 1;
+      updateSkipButton();
+      if (skipRemain <= 0 && !autoScrolledToAnalysis) {
+        autoScrolledToAnalysis = true;
+        document.getElementById("analysisSection").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      if (skipRemain <= 0 && !autoAnalysisTriggered) {
+        autoAnalysisTriggered = true;
+        analyzeUserBySkipBehavior();
+      }
+      const next = (compareIndex + 1) % compareSources.length;
+      playCompareSource(next, true);
+    });
+
+    centerStartCompareBtn.addEventListener("click", startComparePlan);
+    analyzeBtn.addEventListener("click", analyzeUserBySkipBehavior);
+    window.addEventListener("resize", () => {
+      updatePipelineStream(currentPipelineStage, pipelineStageComplete);
+    });
+
+    renderPlaylist();
+    renderComparePlaylist();
+    updateBadge();
+    updateCompareBadge();
+    updateSkipButton();
+    updateSkipLogText();
+    resetPipelineVisuals();
+    startCountdown();
+    switchTo(0, true);
+  </script>
+</body>
+</html>

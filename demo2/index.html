@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>demo2 - 偏好标签驱动的广告风格重绘</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #151a22;
+      --panel-2: #1b2230;
+      --text: #f5f7fb;
+      --muted: #97a3b6;
+      --line: #2a3242;
+      --brand: #23d07a;
+      --brand-2: #86efb1;
+      --shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(35, 208, 122, 0.11), transparent 24%),
+        linear-gradient(180deg, #0b0f15 0%, #0e131b 100%);
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      height: 58px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(8, 11, 16, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .logo {
+      font-size: 21px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: var(--brand);
+    }
+
+    .topbar-right {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .stage {
+      max-width: 1600px;
+      margin: 20px auto 40px;
+      padding: 0 16px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(240px, 0.35fr) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .player-card,
+    .right,
+    .focus-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.02));
+      box-shadow: var(--shadow);
+    }
+
+    .player-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(220px, 0.62fr);
+      gap: 16px;
+    }
+
+    .player-card { overflow: hidden; }
+
+    .player-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      overflow: hidden;
+    }
+
+    .frame-bg {
+      position: absolute;
+      inset: 0;
+      background: url("./bg.png") center / cover no-repeat;
+      transform: scale(1.02);
+    }
+
+    .frame-dim {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 70% 55%, rgba(0,0,0,0.14), rgba(0,0,0,0.56));
+    }
+
+    .badge {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(0, 0, 0, 0.45);
+      color: #fff;
+      font-size: 12px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 3;
+    }
+
+    .ad-overlay {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: min(62%, 520px);
+      max-height: 74%;
+      object-fit: contain;
+      border-radius: 14px;
+      box-shadow: 0 18px 38px rgba(0, 0, 0, 0.52);
+      z-index: 2;
+    }
+
+    .meta {
+      padding: 16px 18px 18px;
+      background: var(--panel);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .right {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .right-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .right-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .state {
+      color: var(--brand-2);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .playlist {
+      list-style: none;
+      margin: 0;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+    }
+
+    .item {
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 12px;
+      background: var(--panel-2);
+    }
+
+    .item.active {
+      border-color: rgba(35, 208, 122, 0.46);
+      background: rgba(35, 208, 122, 0.09);
+    }
+
+    .item-name {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .item-desc {
+      margin: 6px 0 0;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .focus-card {
+      padding: 22px 18px;
+      background:
+        radial-gradient(circle at 20% 40%, rgba(35, 208, 122, 0.18), transparent 44%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+    }
+
+    .focus-text {
+      margin: 0;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+      line-height: 1.2;
+      font-size: clamp(22px, 2.2vw, 34px);
+      color: var(--text);
+      text-shadow: 0 10px 26px rgba(0, 0, 0, 0.5);
+    }
+
+    .focus-text strong {
+      color: var(--brand-2);
+    }
+
+    @media (max-width: 1280px) {
+      .stage {
+        grid-template-columns: 1fr;
+      }
+
+      .player-layout {
+        grid-template-columns: minmax(0, 1fr) 320px;
+      }
+
+      .focus-card { order: 2; }
+    }
+
+    @media (max-width: 860px) {
+      .player-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .ad-overlay {
+        width: min(78%, 520px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="logo">腾讯视频</div>
+    <div class="topbar-right">偏好标签驱动的广告风格重绘 Demo</div>
+  </header>
+
+  <main class="stage">
+    <section class="player-layout" aria-label="播放器一">
+      <section class="player-card">
+        <div class="player-wrap">
+          <div class="frame-bg" aria-hidden="true"></div>
+          <div class="frame-dim" aria-hidden="true"></div>
+          <div class="badge">静态画面</div>
+          <img class="ad-overlay" src="./after.png" alt="居中广告" />
+        </div>
+        <div class="meta">
+          <h1 class="title">《飞驰人生》</h1>
+        </div>
+      </section>
+
+      <aside class="right" aria-label="播放器一播放列表">
+        <div class="right-header">
+          <h2 class="right-title">播放列表</h2>
+          <span class="state">飞驰人生</span>
+        </div>
+        <ul class="playlist">
+          <li class="item active">
+            <p class="item-name">飞驰人生</p>
+          </li>
+        </ul>
+      </aside>
+    </section>
+
+    <section class="focus-card" aria-label="重绘说明">
+      <p class="focus-text">根据用户爱好：<strong>科技</strong>，<strong>中年</strong>，<strong>男性</strong>等标签分析目标风格重绘。</p>
+    </section>
+
+    <section class="player-layout" aria-label="播放器二">
+      <section class="player-card">
+        <div class="player-wrap">
+          <div class="frame-bg" aria-hidden="true"></div>
+          <div class="frame-dim" aria-hidden="true"></div>
+          <div class="badge">静态画面</div>
+          <img class="ad-overlay" src="./before.png" alt="居中广告" />
+        </div>
+        <div class="meta">
+          <h1 class="title">《飞驰人生》</h1>
+        </div>
+      </section>
+
+      <aside class="right" aria-label="播放器二播放列表">
+        <div class="right-header">
+          <h2 class="right-title">播放列表</h2>
+          <span class="state">飞驰人生</span>
+        </div>
+        <ul class="playlist">
+          <li class="item active">
+            <p class="item-name">飞驰人生</p>
+          </li>
+        </ul>
+      </aside>
+    </section>
+  </main>
+</body>
+</html>

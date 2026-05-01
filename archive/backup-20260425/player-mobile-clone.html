@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>移动端播放页复刻 - 腾讯视频风格</title>
+  <style>
+    :root {
+      --bg: #f4f7ff;
+      --card: #ffffff;
+      --line: #dfe7fa;
+      --text: #1d2c49;
+      --muted: #6b7da5;
+      --accent: #ffcd32;
+      --vip: #f6a400;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      overflow-x: hidden;
+    }
+    body {
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(180deg, #f8faff 0%, #edf3ff 100%);
+      color: var(--text);
+      padding: 0 10px;
+    }
+    .app {
+      width: min(100vw - 20px, 390px);
+      margin: 0 auto;
+      min-height: 100dvh;
+      background: var(--bg);
+      padding-bottom: 78px;
+      border-left: 1px solid #dbe6fb;
+      border-right: 1px solid #dbe6fb;
+      box-shadow: 0 10px 36px rgba(41, 70, 126, 0.12);
+    }
+
+    .player-wrap {
+      position: relative;
+      background: #090d17;
+    }
+    .player-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 3;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      color: #fff;
+      font-size: 13px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, .5);
+    }
+    .top-actions { display: flex; gap: 10px; }
+    .player-screen {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background:
+        linear-gradient(to top, rgba(0, 0, 0, .65), rgba(0, 0, 0, .05)),
+        url("https://puui.qpic.cn/vpic_cover/w41025my54z/w41025my54z_hz.jpg/0") center/cover no-repeat;
+      display: flex;
+      align-items: flex-end;
+      padding: 10px;
+      color: #fff;
+      position: relative;
+    }
+    .progress {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: rgba(255, 255, 255, .2);
+    }
+    .progress > span {
+      display: block;
+      width: 37%;
+      height: 100%;
+      background: #ffcf3e;
+    }
+    .time {
+      font-size: 12px;
+      opacity: .95;
+    }
+
+    .content { padding: 12px; display: grid; gap: 10px; }
+    .content { width: 100%; max-width: 100%; overflow-x: hidden; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      width: 100%;
+      max-width: 100%;
+      overflow: hidden;
+    }
+    .title {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 8px;
+    }
+    .meta {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .vip-tag {
+      font-size: 10px;
+      color: #5b3a00;
+      background: linear-gradient(120deg, #ffd978, #f6a400);
+      border-radius: 6px;
+      padding: 1px 6px;
+      font-weight: 700;
+    }
+
+    .ops {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      text-align: center;
+      gap: 6px;
+      font-size: 12px;
+      color: #445a88;
+    }
+    .op i {
+      display: block;
+      font-style: normal;
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 16px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+    }
+    .tabs .active {
+      font-weight: 700;
+      color: #1b315e;
+      position: relative;
+    }
+    .tabs .active::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -8px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .episodes {
+      display: flex;
+      overflow-x: auto;
+      gap: 8px;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+      width: 100%;
+      max-width: 100%;
+    }
+    .episodes::-webkit-scrollbar { display: none; }
+    .ep {
+      min-width: 58px;
+      text-align: center;
+      padding: 7px 8px;
+      border-radius: 8px;
+      border: 1px solid #ccd9f7;
+      background: #f9fbff;
+      font-size: 13px;
+      color: #425982;
+    }
+    .ep.active {
+      background: #1f3d77;
+      color: #fff;
+      border-color: #1f3d77;
+    }
+
+    .rec-list { display: grid; gap: 10px; width: 100%; max-width: 100%; }
+    .rec-item {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 10px;
+      align-items: center;
+      width: 100%;
+      max-width: 100%;
+    }
+    .rec-item > div {
+      min-width: 0;
+    }
+    .rec-thumb {
+      width: 120px;
+      height: 68px;
+      border-radius: 8px;
+      border: 1px solid #cad8f7;
+      background-size: cover;
+      background-position: center;
+    }
+    .rec-title {
+      font-size: 14px;
+      line-height: 1.35;
+      margin-bottom: 4px;
+      word-break: break-word;
+    }
+    .rec-sub {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .comment-tip {
+      font-size: 13px;
+      color: #4e648f;
+      line-height: 1.45;
+    }
+    .comment-input {
+      margin-top: 8px;
+      border: 1px solid #ccdaf8;
+      background: #f8fbff;
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: #7a89ad;
+      font-size: 12px;
+    }
+
+    .bottom-bar {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 0;
+      width: 100%;
+      max-width: 390px;
+      background: #ffffff;
+      border-top: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      text-align: center;
+      font-size: 11px;
+      color: #7082a8;
+      z-index: 10;
+    }
+    .bottom-bar span {
+      padding: 10px 4px 11px;
+    }
+    .bottom-bar .active { color: #224277; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="player-wrap">
+      <div class="player-top">
+        <div>← 返回</div>
+        <div class="top-actions"><span>清晰度</span><span>投屏</span><span>⋯</span></div>
+      </div>
+      <div class="player-screen">
+        <div class="time">14:23 / 39:48</div>
+        <div class="progress"><span></span></div>
+      </div>
+    </section>
+
+    <main class="content">
+      <section class="card">
+        <div class="title">方圆八百米_13：警匪父子交锋，真相步步逼近</div>
+        <div class="meta">
+          <span class="vip-tag">VIP</span>
+          <span>2026 · 悬疑 · 警匪</span>
+          <span>92.6万次观看</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="ops">
+          <div class="op"><i>⬇</i>下载</div>
+          <div class="op"><i>🖥</i>投屏</div>
+          <div class="op"><i>💬</i>讨论</div>
+          <div class="op"><i>⭐</i>加追</div>
+          <div class="op"><i>↗</i>分享</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="tabs"><span class="active">选集</span><span>简介</span><span>评论</span></div>
+        <div class="episodes">
+          <span class="ep">01</span><span class="ep">02</span><span class="ep">03</span>
+          <span class="ep">04</span><span class="ep">05</span><span class="ep">06</span>
+          <span class="ep">07</span><span class="ep">08</span><span class="ep">09</span>
+          <span class="ep">10</span><span class="ep">11</span><span class="ep">12</span>
+          <span class="ep active">13</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="tabs"><span class="active">相关推荐</span></div>
+        <div class="rec-list">
+          <article class="rec-item">
+            <div class="rec-thumb" style="background-image:url('https://puui.qpic.cn/vpic_cover/q4102kn7dr9/q4102kn7dr9_hz.jpg/0')"></div>
+            <div>
+              <div class="rec-title">白日提灯：四百岁灵主初遇凡人将军</div>
+              <div class="rec-sub">古装爱情 · 热播中</div>
+            </div>
+          </article>
+          <article class="rec-item">
+            <div class="rec-thumb" style="background-image:url('https://puui.qpic.cn/vpic_cover/v4102yte9jg/v4102yte9jg_hz.jpg/0')"></div>
+            <div>
+              <div class="rec-title">佳偶天成：任嘉伦战鬼重生护太平</div>
+              <div class="rec-sub">古装爱情 · 更新中</div>
+            </div>
+          </article>
+          <article class="rec-item">
+            <div class="rec-thumb" style="background-image:url('https://puui.qpic.cn/vpic_cover/h4102lz1osw/h4102lz1osw_hz.jpg/0')"></div>
+            <div>
+              <div class="rec-title">蜜语纪：办公室恋情与女性成长并行</div>
+              <div class="rec-sub">都市爱情 · 全网热播</div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="tabs"><span class="active">评论区</span></div>
+        <div class="comment-tip">边看边聊，实时讨论剧情高能点。登录后可发送弹幕与评论。</div>
+        <div class="comment-input">发一条友善评论...</div>
+      </section>
+    </main>
+  </div>
+
+  <div class="bottom-bar">
+    <span>首页</span>
+    <span>电视剧</span>
+    <span class="active">播放</span>
+    <span>短视频</span>
+    <span>我的</span>
+  </div>
+</body>
+</html>

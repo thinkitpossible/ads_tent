@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: ads-tent
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: SILICONFLOW_API_KEY
+        sync: false
+      - key: SILICONFLOW_TEXT_MODEL
+        value: MiniMaxAI/MiniMax-M2.5
+      - key: SILICONFLOW_VISION_MODEL
+        value: Qwen/Qwen3.6-35B-A3B
