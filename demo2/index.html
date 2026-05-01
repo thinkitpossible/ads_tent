@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>demo2 - 偏好标签驱动的广告风格重绘</title>
   <style>
     :root {
@@ -90,12 +93,15 @@
       overflow: hidden;
     }
 
-    .frame-bg {
+    .frame-bg-img {
       position: absolute;
       inset: 0;
-      background: url("/demo2/bg.png") center / cover no-repeat;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
       transform: scale(1.02);
       z-index: 0;
+      display: block;
     }
 
     .frame-dim {
@@ -255,10 +261,10 @@
     <section class="player-layout" aria-label="播放器一">
       <section class="player-card">
         <div class="player-wrap">
-          <div class="frame-bg" aria-hidden="true"></div>
+          <img class="frame-bg-img" alt="" aria-hidden="true" data-src-candidates="./bg.png|/demo2/bg.png" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" />
           <div class="frame-dim" aria-hidden="true"></div>
           <div class="badge">静态画面</div>
-          <img class="ad-overlay" src="/demo2/after.png" alt="居中广告" onerror="this.onerror=null; this.src='./after.png';" />
+          <img class="ad-overlay" alt="居中广告" data-src-candidates="./after.png|/demo2/after.png" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" />
         </div>
         <div class="meta">
           <h1 class="title">《飞驰人生》</h1>
@@ -285,10 +291,10 @@
     <section class="player-layout" aria-label="播放器二">
       <section class="player-card">
         <div class="player-wrap">
-          <div class="frame-bg" aria-hidden="true"></div>
+          <img class="frame-bg-img" alt="" aria-hidden="true" data-src-candidates="./bg.png|/demo2/bg.png" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" />
           <div class="frame-dim" aria-hidden="true"></div>
           <div class="badge">静态画面</div>
-          <img class="ad-overlay" src="/demo2/before.png" alt="居中广告" onerror="this.onerror=null; this.src='./before.png';" />
+          <img class="ad-overlay" alt="居中广告" data-src-candidates="./before.png|/demo2/before.png" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" />
         </div>
         <div class="meta">
           <h1 class="title">《飞驰人生》</h1>
@@ -308,5 +314,51 @@
       </aside>
     </section>
   </main>
+
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search || "");
+      if (!params.has("v")) {
+        params.set("v", String(Date.now()));
+        var next = window.location.pathname + "?" + params.toString() + (window.location.hash || "");
+        window.location.replace(next);
+        return;
+      }
+
+      var cacheBust = "v=" + params.get("v");
+
+      function withBust(url) {
+        if (!url) return url;
+        return url + (url.indexOf("?") >= 0 ? "&" : "?") + cacheBust;
+      }
+
+      function setWithFallback(img) {
+        var raw = img.getAttribute("data-src-candidates") || "";
+        var candidates = raw
+          .split("|")
+          .map(function (s) { return s.trim(); })
+          .filter(Boolean);
+
+        var index = 0;
+
+        function tryNext() {
+          if (index >= candidates.length) return;
+          var nextUrl = candidates[index++];
+          img.src = withBust(nextUrl);
+        }
+
+        img.addEventListener("error", function () {
+          tryNext();
+        });
+
+        tryNext();
+      }
+
+      var imgs = document.querySelectorAll("img[data-src-candidates]");
+      for (var i = 0; i < imgs.length; i++) {
+        setWithFallback(imgs[i]);
+      }
+    })();
+  </script>
 </body>
 </html>
