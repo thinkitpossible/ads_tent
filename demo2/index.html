@@ -93,14 +93,16 @@
     .frame-bg {
       position: absolute;
       inset: 0;
-      background: url("/demo2/bg.png") center / cover no-repeat;
+      background: url("./bg.png") center / cover no-repeat;
       transform: scale(1.02);
+      z-index: 0;
     }
 
     .frame-dim {
       position: absolute;
       inset: 0;
       background: radial-gradient(circle at 70% 55%, rgba(0,0,0,0.14), rgba(0,0,0,0.56));
+      z-index: 1;
     }
 
     .badge {
@@ -126,6 +128,7 @@
       width: min(50%, 420px);
       max-height: 56%;
       object-fit: contain;
+      display: block;
       border-radius: 14px;
       box-shadow: 0 18px 38px rgba(0, 0, 0, 0.52);
       z-index: 2;
@@ -255,7 +258,7 @@
           <div class="frame-bg" aria-hidden="true"></div>
           <div class="frame-dim" aria-hidden="true"></div>
           <div class="badge">静态画面</div>
-          <img class="ad-overlay" src="/demo2/after.png" alt="居中广告" />
+          <img class="ad-overlay" src="./after.png" alt="居中广告" />
         </div>
         <div class="meta">
           <h1 class="title">《飞驰人生》</h1>
@@ -285,7 +288,7 @@
           <div class="frame-bg" aria-hidden="true"></div>
           <div class="frame-dim" aria-hidden="true"></div>
           <div class="badge">静态画面</div>
-          <img class="ad-overlay" src="/demo2/before.png" alt="居中广告" />
+          <img class="ad-overlay" src="./before.png" alt="居中广告" />
         </div>
         <div class="meta">
           <h1 class="title">《飞驰人生》</h1>
